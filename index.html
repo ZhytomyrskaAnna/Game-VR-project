@@ -1,108 +1,53 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <title>Прототип</title>
-        <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-        <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    </head>
-    <body style="margin : 0px; overflow: hidden;">
-        <div id="control-panel">
-            <button id="generate-button" onclick="generateNewPrize()">
-                Згенерувати новий секретний приз
-            </button>
-            <div id="status-display">Статус: Приз не згенеровано</div>
-        </div>
+  <head>
+      <meta charset="UTF-8">
+      <title>Прототип</title>
+      <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+      <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+      <script src="index.js"> </script>
+  </head>
+  <body style="margin : 0px; overflow: hidden;">
+    <div id="control-panel">
+        <button id="generate-button" onclick="generateNewPrize()">
+            Згенерувати новий секретний приз
+        </button>
+        <div id="status-display">Статус: Приз не згенеровано</div>
+    </div>
+      
+    <a-scene embedded vr-mode-ui="enabled: false;" arjs="debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+      
+      <a-marker type="barcode" value="0" prizeslots></a-marker>
+  
+      <a-marker type="barcode" value="1" prizeslots></a-marker>
+  
+      <a-marker type="barcode" value="2" prizeslots></a-marker>
+  
+      <a-marker type="barcode" value="3" prizeslots></a-marker>
+  
+      <a-marker type="barcode" value="4" prizeslots></a-marker>
+      
+      <a-marker type="barcode" value="5" prizeslots></a-marker>
+      
+      <a-marker type="barcode" value="6" prizeslots></a-marker>
 
-        <script>
-            const MAX_SLOT = 12; 
-            let prizeSlot = "-1"; 
-            let statusDisplay = document.getElementById("status-display");
+      <a-marker type="barcode" value="7" prizeslots></a-marker>
 
-            function generateNewPrize() {
+      <a-marker type="barcode" value="8" prizeslots></a-marker>
 
-                const newSlotNumber = Math.floor(Math.random() * (MAX_SLOT + 1));
-                
-                prizeSlot = String(newSlotNumber);
-                
-                if (statusDisplay) {
-                    statusDisplay.textContent = "Статус: Приз заховано! Шукайте!";
-                }
-                
-                alert("Новий секретний приз заховано! Розпочинайте пошук!");
-                
-                //console.log(`Секретний приз: ${prizeSlot}`));
-            }
+      <a-marker type="barcode" value="8" prizeslots></a-marker>
 
-            document.addEventListener('DOMContentLoaded', generateNewPrize);
+      <a-marker type="barcode" value="9" prizeslots></a-marker>
 
+      <a-marker type="barcode" value="10" prizeslots></a-marker>
 
-            AFRAME.registerComponent('prizeslots', {
-                init: function () 
-                {
-                    let marker = this.el;
-            
-                    marker.addEventListener('markerFound', function() {
-                      
-                      if (prizeSlot === "-1"){
-                        alert(" Приз ще не згенеровано або вже забрано. Натисніть кнопку.");
-                      } else if (prizeSlot === marker.getAttribute("value")){
-                        alert(" ВІТАЄМО! Приз знайдено!");
-                      } else {
+      <a-marker type="barcode" value="11" prizeslots></a-marker>
 
-                        alert(" Тут немає призу. Спробуйте інший маркер.");
-                      } 
-                    });
-            
-                    marker.addEventListener('markerLost', function() {
-                      
-                      if (prizeSlot === marker.getAttribute("value")){
-                        prizeSlot = "-1"; 
-                        
+      <a-marker type="barcode" value="12" prizeslots></a-marker>
 
-                        if (statusDisplay) {
-                            statusDisplay.textContent = "Статус: Приз забрано! Згенеруйте новий.";
-                        }
-                        
-                        alert("Приз забрано! Щоб продовжити гру, згенеруйте новий приз!");
-                      }
-                    });
-                }
-            });
-            
-            </script>
-        <a-scene embedded vr-mode-ui="enabled: false;" arjs="debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
-            
-            <a-marker type="barcode" value="0" prizeslots></a-marker>
-        
-            <a-marker type="barcode" value="1" prizeslots></a-marker>
-        
-            <a-marker type="barcode" value="2" prizeslots></a-marker>
-        
-            <a-marker type="barcode" value="3" prizeslots></a-marker>
-        
-            <a-marker type="barcode" value="4" prizeslots></a-marker>
-            
-            <a-marker type="barcode" value="5" prizeslots></a-marker>
-            
-            <a-marker type="barcode" value="6" prizeslots></a-marker>
-
-            <a-marker type="barcode" value="7" prizeslots></a-marker>
-
-            <a-marker type="barcode" value="8" prizeslots></a-marker>
-
-            <a-marker type="barcode" value="8" prizeslots></a-marker>
-
-            <a-marker type="barcode" value="9" prizeslots></a-marker>
-
-            <a-marker type="barcode" value="10" prizeslots></a-marker>
-
-            <a-marker type="barcode" value="11" prizeslots></a-marker>
-
-            <a-marker type="barcode" value="12" prizeslots></a-marker>
-
-            <a-entity camera></a-entity>
-            <a-entity loop></a-entity>
-        </a-scene>
-    </body>
+      <a-entity camera></a-entity>
+      
+      <a-entity loop></a-entity>
+    </a-scene>
+  </body>
 </html>
