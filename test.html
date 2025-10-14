@@ -1,0 +1,112 @@
+    <!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вгадай число</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        input[type="number"] {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 150px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        #message {
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        #message.success {
+            color: green;
+        }
+        #message.error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Вгадай секретне число!</h1>
+        <p>Введіть число від 1 до 30:</p>
+        <input type="number" id="guessInput" min="1" max="30" placeholder="Ваше число">
+        <button id="submitGuess">Вгадати</button>
+        <div id="message"></div>
+    </div>
+
+    <script>
+        document.getElementById('submitGuess').addEventListener('click', async () => {
+            const guessInput = document.getElementById('guessInput');
+            const messageDiv = document.getElementById('message');
+            const userGuess = parseInt(guessInput.value);
+
+            // Валідація на клієнтській стороні
+            if (isNaN(userGuess) || userGuess < 1 || userGuess > 30) {
+                messageDiv.textContent = 'Будь ласка, введіть дійсне число від 1 до 30.';
+                messageDiv.className = 'error';
+                return;
+            }
+
+            try {
+                // Зверніть увагу: замініть 'http://localhost:3000' на URL вашого розгорнутого сервера
+                const response = await fetch('http://localhost:3000/guess', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ number: userGuess })
+                });
+
+                const data = await response.json();
+                messageDiv.textContent = data.message;
+
+                if (response.ok) {
+                    if (data.message.includes('Вітаємо')) {
+                        messageDiv.className = 'success';
+                    } else if (data.message.includes('не вгадали')) {
+                         messageDiv.className = 'error';
+                    } else if (data.message.includes('вгадано іншим')) {
+                         messageDiv.className = 'error';
+                    }
+                } else {
+                    messageDiv.className = 'error';
+                }
+
+            } catch (error) {
+                console.error('Помилка при відправці запиту:', error);
+                messageDiv.textContent = 'Виникла помилка під час зв\'язку з сервером.';
+                messageDiv.className = 'error';
+            }
+        });
+    </script>
+</body>
+</html>

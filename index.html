@@ -1,27 +1,32 @@
 <!DOCTYPE html>
 <html>
-  <head>
-      <meta charset="UTF-8">
-      <title>Прототип</title>
-      <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
-      <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-      <script src="index.js"> </script>
-  </head>
-  <body style="margin : 0px; overflow: hidden;">
-    <div id="control-panel">
-        <button id="generate-button" onclick="generateNewPrize()">
-            Згенерувати новий секретний приз
-        </button>
-        <div id="status-display">Статус: Приз не згенеровано</div>
-    </div>
-    <a-scene embedded vr-mode-ui="enabled: false;" arjs="debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
-      
 
-      <a-entity camera></a-entity>
-      
-      <a-entity loop></a-entity>
+<head>
+  <meta charset="UTF-8">
+  <title>Прототип</title>
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <script src="index.js"> </script>
+</head>
 
-    </a-scene>
-    <script src="markerGenerator.js"></script> 
-  </body>
+<body style="margin : 0px; overflow: hidden;">
+  <div style="border-radius: 5px; border: 2px solid black;"><a href="test.html" style="font-size: 28px;">Test page</a></div>
+  <div id="control-panel">
+    <button id="generate-button" onclick="generateNewPrize()">
+      Згенерувати новий секретний приз
+    </button>
+    <div id="status-display">Статус: Приз не згенеровано</div>
+  </div>
+  <a-scene embedded vr-mode-ui="enabled: false;"
+    arjs="debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+
+
+    <a-entity camera></a-entity>
+
+    <a-entity loop></a-entity>
+
+  </a-scene>
+  <script src="markerGenerator.js"></script>
+</body>
+
 </html>
