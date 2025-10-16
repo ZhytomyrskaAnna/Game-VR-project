@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AR Гра з Призами</title>
+  <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <script src="index.js"></script>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    
+    #control-panel {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    
+    #generate-button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    
+    #generate-button:hover {
+      background-color: #0056b3;
+    }
+    
+    #status-display {
+      font-weight: bold;
+      color: #333;
+      font-size: 14px;
+    }
+    
+    .test-link {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 999;
+      background-color: white;
+      padding: 10px 15px;
+      border-radius: 5px;
+      border: 2px solid black;
+      text-decoration: none;
+      color: black;
+      font-size: 18px;
+    }
+    
+    .test-link:hover {
+      background-color: #c03535;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="test.html" class="test-link">Test page</a>
+  
+  <div id="control-panel">
+    <button id="generate-button" onclick="generateNewPrize()">
+      Згенерувати новий секретний приз
+    </button>
+    <div id="status-display">Статус: Готово до пошуку!</div>
+  </div>
+  
+  <a-scene embedded vr-mode-ui="enabled: false;"
+    arjs="debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
+
+    <a-entity camera></a-entity>
+
+  </a-scene>
+  
+  <script src="markerGenerator.js"></script>
+</body>
+
+</html>

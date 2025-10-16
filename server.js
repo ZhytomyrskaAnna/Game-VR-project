@@ -4,54 +4,81 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-let secretNumber = -1;
+const MAX_MARKER = 12;
+let prizeMarker = -1;
 let lastResetDate = null;
 
-function generateNewSecretNumber() {
-    secretNumber = Math.floor(Math.random() * 30) + 1;
+function generateNewPrizeMarker() {
+    prizeMarker = Math.floor(Math.random() * (MAX_MARKER + 1));
     lastResetDate = new Date();
-    console.log(`Нове секретне число згенеровано: ${secretNumber} о ${lastResetDate}`);
+    console.log(`Новий маркер з призом: ${prizeMarker} о ${lastResetDate}`);
 }
 
-if (secretNumber === -1) {
-    generateNewSecretNumber();
+// Генерація при старті
+if (prizeMarker === -1) {
+    generateNewPrizeMarker();
 }
 
+// Перевірка кожну годину для тижневого оновлення
 setInterval(() => {
     const now = new Date();
-    if (lastResetDate && (now.getDate() !== lastResetDate.getDate() || now.getTime() - lastResetDate.getTime() >= 24 * 60 * 60 * 1000)) {
-        generateNewSecretNumber();
+    const daysDiff = Math.floor((now - lastResetDate) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff >= 7) {
+        generateNewPrizeMarker();
     }
 }, 60 * 60 * 1000);
 
 app.use(express.json());
 app.use(cors());
-
-// Раздача статических файлов
 app.use(express.static(path.join(__dirname)));
 
-// Маршрут для главной страницы
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.post('/guess', (req, res) => {
-    const clientGuess = parseInt(req.body.number);
+// Новий ендпоінт для перевірки маркера
+app.post('/check-marker', (req, res) => {
+    const scannedMarker = parseInt(req.body.marker);
 
-    if (isNaN(clientGuess) || clientGuess < 1 || clientGuess > 30) {
-        return res.status(400).json({ message: 'Будь ласка, введіть число від 1 до 30.' });
+    if (isNaN(scannedMarker) || scannedMarker < 0 || scannedMarker > MAX_MARKER) {
+        return res.status(400).json({ 
+            success: false,
+            message: 'Невірний номер маркера.' 
+        });
     }
 
-    if (secretNumber === -1) {
-        return res.json({ message: 'Число вже було вгадано іншим гравцем. Спробуйте завтра!' });
+    if (prizeMarker === -1) {
+        return res.json({ 
+            success: false,
+            message: 'Приз ще не згенеровано. Спробуйте пізніше.' 
+        });
     }
 
-    if (clientGuess === secretNumber) {
-        secretNumber = -1;
-        return res.json({ message: 'Вітаємо! Ви вгадали число!' });
+    if (scannedMarker === prizeMarker) {
+        const tempPrize = prizeMarker;
+        prizeMarker = -1; // Приз забрано
+        return res.json({ 
+            success: true,
+            message: '🎉 Вітаємо! Ви знайшли приз!',
+            markerNumber: tempPrize
+        });
     } else {
-        return res.json({ message: `На жаль, ви не вгадали. Спробуйте ще раз! Ваше число: ${clientGuess}` });
+        return res.json({ 
+            success: false,
+            message: '❌ Тут немає призу. Спробуйте інший маркер.',
+            markerNumber: scannedMarker
+        });
     }
+});
+
+// Ендпоінт для адміністратора (опціонально)
+app.post('/admin/reset-prize', (req, res) => {
+    generateNewPrizeMarker();
+    res.json({ 
+        success: true,
+        message: 'Новий приз згенеровано!' 
+    });
 });
 
 app.listen(port, () => {
