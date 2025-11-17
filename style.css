@@ -1,0 +1,178 @@
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-family: system-ui, sans-serif;
+  background: #ffffff;
+ 
+}
+#control-panel {
+  position: absolute;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 18px 22px;
+  border-radius: 8px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+  text-align: center;
+}
+
+#generate-button {
+  background: linear-gradient(135deg, #ff00bf, #0055ff);
+  color: white;
+  
+  padding: 12px 24px;
+  border-color: #003f99;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: 0.25s ease;
+}
+
+#generate-button:hover {
+  transform: scale(1.05);
+  
+  transition: 0.25s ease;
+  background: linear-gradient(135deg, #0055ff, #ff00bf);
+}
+#status-display {
+  margin-top: 10px;
+  font-weight: 600;
+  color: #000000;
+  font-size: 8px;
+}
+
+.test-link {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 999;
+  background: #0055ff;
+  padding: 12px 24px;
+  border-radius: 10px;
+  border: 2px solid black;
+  text-decoration: none;
+  color: black;
+  font-size: 12px;
+  font-weight: 600;
+  transition: 0.25s ease;
+}
+
+.test-link:hover {
+  background: #ffffff;
+  color: #0055ff;
+  border-color: #0055ff;
+  transform: translateY(-2px);
+}
+#viewfinder {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  color: white;
+  font-family: system-ui, sans-serif;
+  font-weight: 600;
+}
+
+.hud-rec {
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rec-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: red;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  50% { opacity: 0.3; }
+}
+
+
+
+.tag {
+  padding: 3px 7px;
+  border: 2px solid white;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.battery {
+  width: 35px;
+  height: 18px;
+  border: 2px solid white;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+
+.battery-level {
+  width: 75%;
+  height: 100%;
+  background: #ffffff;
+}
+#top-icons {
+    margin: 20px;
+    display: flex;
+    justify-content: space-between;
+}
+.hud-top-right {
+
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.bat-percent {
+  font-size: 14px;
+}
+
+.hud-timer {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.hud-menu {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  font-size: 16px;
+  opacity: 0.9;
+}
+
+.corner {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  border: 3px solid white;
+  opacity: 0.9;
+}
+
+.corner.tl { top: 12px; left: 12px; border-bottom: none; border-right: none; }
+.corner.tr { top: 12px; right: 12px; border-bottom: none; border-left: none; }
+.corner.bl { bottom: 12px; left: 12px; border-top: none; border-right: none; }
+.corner.br { bottom: 12px; right: 12px; border-top: none; border-left: none; }
+
+#center-crosshair {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 26px;
+  height: 26px;
+  transform: translate(-50%, -50%);
+  border: 2px solid white;
+  border-radius: 50%;
+  opacity: 0.8;
+}
