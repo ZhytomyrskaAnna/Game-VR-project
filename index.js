@@ -2,7 +2,7 @@ const MAX_SLOT = 12;
 let statusDisplay = document.getElementById("status-display");
 
 // URL вашого сервера (змініть після розгортання на Render)
-const SERVER_URL = window.location.origin; // Або 'https://your-app.onrender.com'
+const SERVER_URL = 'https://game-vr-project.onrender.com'; 
 
 //функція переводу кирилиці в латиницю
 function transliterate(text) {
