@@ -1,4 +1,4 @@
-const NUMBER_OF_MARKERS = 13;
+const NUMBER_OF_MARKERS = 12;
 
 function generateMarkers() {
     
