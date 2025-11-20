@@ -1,6 +1,6 @@
-const { text } = require("express");
+// const { text } = require("express");
 
-const MAX_SLOT = 12; 
+const MAX_SLOT = 11; 
 let statusDisplay = document.getElementById("status-display");
 
 // URL вашого сервера (змініть після розгортання на Render)
