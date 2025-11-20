@@ -42,7 +42,6 @@ AFRAME.registerComponent('prizeslots', {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
                     textEntity.setAttribute('position', '0 0.5 0');
-                    textEntity.setAttribute('look-at-camera', '');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
                     
@@ -50,7 +49,6 @@ AFRAME.registerComponent('prizeslots', {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
                     textEntity.setAttribute('position', '0 0.5 0');
-                    textEntity.setAttribute('look-at-camera', '');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
                 }

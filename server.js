@@ -44,7 +44,6 @@ app.post('/check-marker', (req, res) => {
     if (isNaN(scannedMarker) || scannedMarker < 0 || scannedMarker > MAX_MARKER) {
         return res.status(400).json({ 
             success: false,
-            // message: 'Wrong marker number.' 
             message: 'Неправильний номер маркера.'
         });
     }
@@ -52,7 +51,6 @@ app.post('/check-marker', (req, res) => {
     if (prizeMarker === -1) {
         return res.json({ 
             success: false,
-            // message: 'Prize is not ready yet. Please try again later.' 
             message: 'Приз ще не згенеровано. Спробуйте пізніше.'
         });
     }
@@ -62,14 +60,12 @@ app.post('/check-marker', (req, res) => {
         prizeMarker = -1; // Приз забрано
         return res.json({ 
             success: true,
-            // message: '🎉 Congrats, you found the prize!',
             message: '🎉 Вітаємо, ви знайшли приз!',
             markerNumber: tempPrize
         });
     } else {
         return res.json({ 
             success: false,
-            // message: '❌ There is no prize here. Try another marker.',
             message: '❌ Тут немає призу. Спробуйте інший маркер.',
             markerNumber: scannedMarker
         });
