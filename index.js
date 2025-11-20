@@ -42,7 +42,7 @@ AFRAME.registerComponent('prizeslots', {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
                     textEntity.setAttribute('position', '0 0.5 0');
-                    textEntity.setAttribute('rotation', '180 0 0');
+                    textEntity.setAttribute('look-at-camera', '');
                     textEntity.setAttribute('scale', '1 1 1');
                     marker.appendChild(textEntity);
                     
@@ -50,7 +50,7 @@ AFRAME.registerComponent('prizeslots', {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
                     textEntity.setAttribute('position', '0 0.5 0');
-                    textEntity.setAttribute('rotation', '180 0 0');
+                    textEntity.setAttribute('look-at-camera', '');
                     textEntity.setAttribute('scale', '1 1 1');
                     marker.appendChild(textEntity);
                 }
@@ -98,5 +98,19 @@ document.addEventListener('DOMContentLoaded', () => {
     statusDisplay = document.getElementById("status-display");
     if (statusDisplay) {
         statusDisplay.textContent = "Статус: Готово до пошуку!";
+    }
+});
+
+AFRAME.registerComponent('look-at-camera', {
+    tick: function () {
+        var el = this.el;
+        var cameraEl = document.querySelector('[camera]');
+
+        if (!cameraEl) {
+            console.warn('Camera entity not found.');
+            return;
+        }
+        // Встановлює об'єкт на орієнтацію камери
+        el.object3D.lookAt(cameraEl.object3D.position);
     }
 });
