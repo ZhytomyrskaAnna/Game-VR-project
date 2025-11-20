@@ -41,6 +41,7 @@ AFRAME.registerComponent('prizeslots', {
                     textEntity.setAttribute('value', transliterate(data.message));
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
+                    textEntity.setAttribute('rotation', '0 180 0');
                     marker.appendChild(textEntity);
                     
                 } else {
