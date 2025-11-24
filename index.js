@@ -1,5 +1,3 @@
-const { text } = require("express");
-
 const MAX_SLOT = 12; 
 let statusDisplay = document.getElementById("status-display");
 
