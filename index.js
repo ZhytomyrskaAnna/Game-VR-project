@@ -96,15 +96,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-AFRAME.registerComponent('look-at-camera', {
-    tick: function () {
-        var el = this.el;
-        var cameraEl = document.querySelector('[camera]');
+// AFRAME.registerComponent('look-at-camera', {
+//     tick: function () {
+//         var el = this.el;
+//         var cameraEl = document.querySelector('[camera]');
 
-        if (!cameraEl) {
-            console.warn('Camera entity not found.');
-            return;
-        }
-        el.object3D.lookAt(cameraEl.object3D.position);
-    }
-});
+//         if (!cameraEl) {
+//             console.warn('Camera entity not found.');
+//             return;
+//         }
+//         el.object3D.lookAt(cameraEl.object3D.position);
+//     }
+// });
