@@ -38,6 +38,7 @@ AFRAME.registerComponent('prizeslots', {
                 if (data.success) {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
+                    textEntity.setAttribute('look-at-camera', '');
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
@@ -45,6 +46,7 @@ AFRAME.registerComponent('prizeslots', {
                 } else {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
+                    textEntity.setAttribute('look-at-camera', '');
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
@@ -96,15 +98,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// AFRAME.registerComponent('look-at-camera', {
-//     tick: function () {
-//         var el = this.el;
-//         var cameraEl = document.querySelector('[camera]');
+AFRAME.registerComponent('look-at-camera', {
+    tick: function () {
+        var el = this.el;
+        var cameraEl = document.querySelector('[camera]');
 
-//         if (!cameraEl) {
-//             console.warn('Camera entity not found.');
-//             return;
-//         }
-//         el.object3D.lookAt(cameraEl.object3D.position);
-//     }
-// });
+        if (!cameraEl) {
+            console.warn('Camera entity not found.');
+            return;
+        }
+        el.object3D.lookAt(cameraEl.object3D.position);
+    }
+});
