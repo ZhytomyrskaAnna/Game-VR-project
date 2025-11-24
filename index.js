@@ -1,3 +1,5 @@
+const { text } = require("express");
+
 const MAX_SLOT = 12; 
 let statusDisplay = document.getElementById("status-display");
 
@@ -16,6 +18,20 @@ function transliterate(text) {
 
     return text.split('').map(char => charMap[char] || char).join('');
 }
+
+AFRAME.registerComponent('look-at-camera', {
+    tick: function () {
+        var el = this.el;
+        var cameraEl = document.querySelector('[camera]');
+
+        if (!cameraEl) {
+            console.warn('Camera entity not found.');
+            return;
+        }
+        el.object3D.lookAt(cameraEl.object3D.position);
+    }
+});
+
 
 AFRAME.registerComponent('prizeslots', {
     init: function () {
@@ -38,7 +54,7 @@ AFRAME.registerComponent('prizeslots', {
                 if (data.success) {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
-                    textEntity.setAttribute('look-at-camera', '');
+                    textEntity.setAttribute('rotation', '180 0 0');
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
@@ -46,7 +62,7 @@ AFRAME.registerComponent('prizeslots', {
                 } else {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
-                    textEntity.setAttribute('look-at-camera', '');
+                    textEntity.setAttribute('rotation', '180 0 0');
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
@@ -98,15 +114,3 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-AFRAME.registerComponent('look-at-camera', {
-    tick: function () {
-        var el = this.el;
-        var cameraEl = document.querySelector('[camera]');
-
-        if (!cameraEl) {
-            console.warn('Camera entity not found.');
-            return;
-        }
-        el.object3D.lookAt(cameraEl.object3D.position);
-    }
-});
