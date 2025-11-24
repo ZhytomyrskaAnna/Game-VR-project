@@ -1,6 +1,4 @@
-// const { text } = require("express");
-
-const MAX_SLOT = 11; 
+const MAX_SLOT = 12; 
 let statusDisplay = document.getElementById("status-display");
 
 // URL вашого сервера (змініть після розгортання на Render)
@@ -38,7 +36,6 @@ AFRAME.registerComponent('prizeslots', {
                 const data = await response.json();
                 
                 if (data.success) {
-                    //відобразити напис прямо на маркері
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
                     textEntity.setAttribute('position', '0 0.5 0');
@@ -108,7 +105,6 @@ AFRAME.registerComponent('look-at-camera', {
             console.warn('Camera entity not found.');
             return;
         }
-        // Встановлює об'єкт на орієнтацію камери
         el.object3D.lookAt(cameraEl.object3D.position);
     }
 });
