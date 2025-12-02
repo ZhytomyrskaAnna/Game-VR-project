@@ -8,18 +8,34 @@
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
   <script src="index.js"></script>
+
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <button><a href="index2.html">Other page</a></button>
-  <a-scene embedded vr-mode-ui="enabled: false;"
-    arjs="debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
 
-    <a-entity camera></a-entity>
+  <div class="container">
+      <h1>ПОШУК СКАРБІВ</h1>
+      <p class="subtitle">Гри з доповненою реальністю </p>
 
-  </a-scene>
-  
-  <script src="markerGenerator.js"></script>
+      <h2 class="section-title"> Мета гри</h2>
+      <ul class="instruction-list">
+          <li>Мета: Наведіть камеру на один із маркерів, щоб знайти </li>
+      <img class = "markers-gallery" src="image_a7a5ba.png" alt="Скриня з скарбами" />
+      </ul>
+      
+      <h2 class="section-title"> Приклади маркерів</h2>
+      <div class="markers-gallery">
+          <p style="color: #6b7280; font-style: italic;">Ось як виглядають деякі з AR-маркерів, які потрібно відсканувати:</p>
+          <img src="image_a7a5ba.png" alt="Приклади Barcode AR-маркерів для AR.js" />
+      </div>
+      
+      <button id="start-game-btn" onclick="window.location.href='ar-game.html'">
+           ПОЧАТИ ПОШУК (перейти до камери)
+      </button>
+      
+  </div>
+
 </body>
 
 </html>
