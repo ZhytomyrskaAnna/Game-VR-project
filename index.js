@@ -1,0 +1,114 @@
+const MAX_SLOT = 12; 
+let statusDisplay = document.getElementById("status-display");
+
+// URL вашого сервера (змініть після розгортання на Render)
+const SERVER_URL = 'https://game-vr-project.onrender.com'; 
+
+//функція переводу кирилиці в латиницю
+function transliterate(text) {
+    const charMap = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'ґ': 'g', 'д': 'd', 'е': 'e', 'є': 'ye',
+        'ж': 'zh', 'з': 'z', 'и': 'y', 'і': 'i', 'ї': 'yi', 'й': 'y', 'к': 'k', 'л': 'l',
+        'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ю': 'yu', 'я': 'ya',
+        'ь': '', 'ъ': '', ' ': '_', '.': '', ',': '', '!': '', '?': '', '-': '_'
+    };
+
+    return text.split('').map(char => charMap[char] || char).join('');
+}
+
+AFRAME.registerComponent('look-at-camera', {
+    tick: function () {
+        var el = this.el;
+        var cameraEl = document.querySelector('[camera]');
+
+        if (!cameraEl) {
+            console.warn('Camera entity not found.');
+            return;
+        }
+        el.object3D.lookAt(cameraEl.object3D.position);
+    }
+});
+
+
+AFRAME.registerComponent('prizeslots', {
+    init: function () {
+        let marker = this.el;
+
+        marker.addEventListener('markerFound', async function() {
+            const markerValue = marker.getAttribute("value");
+            
+            try {
+                const response = await fetch(`${SERVER_URL}/check-marker`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ marker: parseInt(markerValue) })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    let textEntity = document.createElement('a-text');
+                    textEntity.setAttribute('value', transliterate(data.message));
+                    textEntity.setAttribute('rotation', '180 90 0');
+                    textEntity.setAttribute('position', '0 0.5 0');
+                    textEntity.setAttribute('scale', '2 2 2');
+                    marker.appendChild(textEntity);
+                    
+                } else {
+                    let textEntity = document.createElement('a-text');
+                    textEntity.setAttribute('value', transliterate(data.message));
+                    textEntity.setAttribute('rotation', '180 90 0');
+                    textEntity.setAttribute('position', '0 0.5 0');
+                    textEntity.setAttribute('scale', '2 2 2');
+                    marker.appendChild(textEntity);
+                }
+                
+            } catch (error) {
+                console.error('Error connecting to server:', error);
+                alert('Error connecting to server. Please check your connection.');
+            }
+        });
+        // якщо на маркер додано текст, видалити його при втраті маркера
+        marker.addEventListener('markerLost', function() {
+            let textEntity = marker.querySelector('a-text');
+            if (textEntity) {
+                marker.removeChild(textEntity);
+            }
+        });
+    }
+});
+
+// Функція для адміністратора (опціонально)
+async function generateNewPrize() {
+    try {
+        const response = await fetch(`${SERVER_URL}/admin/reset-prize`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            alert(data.message);
+            if (statusDisplay) {
+                statusDisplay.textContent = "Status: Ready to search!";
+            }
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Failed to generate a new prize.');
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    statusDisplay = document.getElementById("status-display");
+    if (statusDisplay) {
+        statusDisplay.textContent = "Статус: Готово до пошуку!";
+    }
+});
+
