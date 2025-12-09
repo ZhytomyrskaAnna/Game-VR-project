@@ -44,14 +44,14 @@ app.post('/check-marker', (req, res) => {
     if (isNaN(scannedMarker) || scannedMarker < 0 || scannedMarker > MAX_MARKER) {
         return res.status(400).json({ 
             success: false,
-            message: 'Wrong marker number.' 
+            message: 'Wrong marker\nnumber.' 
         });
     }
 
     if (prizeMarker === -1) {
         return res.json({ 
             success: false,
-            message: 'Prize has already been claimed. Please wait for the next one.' 
+            message: 'Prize has already been claimed.\nPlease wait for the next one.' 
         });
     }
 
@@ -60,13 +60,13 @@ app.post('/check-marker', (req, res) => {
         prizeMarker = -1; // Приз забрано
         return res.json({ 
             success: true,
-            message: '🎉 Congratulations! You found the prize!',
+            message: '🎉 Congratulations!\nYou found the prize!',
             markerNumber: tempPrize
         });
     } else {
         return res.json({ 
             success: false,
-            message: '❌ There is no prize here. Try another marker.',
+            message: '❌ There is no prize here.\nTry another marker.',
             markerNumber: scannedMarker
         });
     }
