@@ -44,14 +44,14 @@ app.post('/check-marker', (req, res) => {
     if (isNaN(scannedMarker) || scannedMarker < 0 || scannedMarker > MAX_MARKER) {
         return res.status(400).json({ 
             success: false,
-            message: 'Невірний номер маркера.' 
+            message: 'Wrong marker number.' 
         });
     }
 
     if (prizeMarker === -1) {
         return res.json({ 
             success: false,
-            message: 'Приз ще не згенеровано. Спробуйте пізніше.' 
+            message: 'Prize has already been claimed. Please wait for the next one.' 
         });
     }
 
@@ -60,13 +60,13 @@ app.post('/check-marker', (req, res) => {
         prizeMarker = -1; // Приз забрано
         return res.json({ 
             success: true,
-            message: '🎉 Вітаємо! Ви знайшли приз!',
+            message: '🎉 Congratulations! You found the prize!',
             markerNumber: tempPrize
         });
     } else {
         return res.json({ 
             success: false,
-            message: '❌ Тут немає призу. Спробуйте інший маркер.',
+            message: '❌ There is no prize here. Try another marker.',
             markerNumber: scannedMarker
         });
     }
@@ -77,10 +77,10 @@ app.post('/admin/reset-prize', (req, res) => {
     generateNewPrizeMarker();
     res.json({ 
         success: true,
-        message: 'Новий приз згенеровано!' 
+        message: 'New prize generated!' 
     });
 });
 
 app.listen(port, () => {
-    console.log(`Сервер запущено на http://localhost:${port}`);
+    console.log(`Server running at http://localhost:${port}`);
 });

@@ -52,7 +52,7 @@ AFRAME.registerComponent('prizeslots', {
                 if (data.success) {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
-                    textEntity.setAttribute('rotation', '180 0 0');
+                    textEntity.setAttribute('look-at-camera', '');
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
@@ -60,15 +60,15 @@ AFRAME.registerComponent('prizeslots', {
                 } else {
                     let textEntity = document.createElement('a-text');
                     textEntity.setAttribute('value', transliterate(data.message));
-                    textEntity.setAttribute('rotation', '180 0 0');
+                    textEntity.setAttribute('look-at-camera', '');
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
                 }
                 
             } catch (error) {
-                console.error('Помилка зв\'язку з сервером:', error);
-                alert('Помилка зв\'язку з сервером. Перевірте підключення.');
+                console.error('Error connecting to server:', error);
+                alert('Error connecting to server. Please check your connection.');
             }
         });
         // якщо на маркер додано текст, видалити його при втраті маркера
@@ -96,12 +96,12 @@ async function generateNewPrize() {
         if (data.success) {
             alert(data.message);
             if (statusDisplay) {
-                statusDisplay.textContent = "Статус: Новий приз згенеровано!";
+                statusDisplay.textContent = "Status: Ready to search!";
             }
         }
     } catch (error) {
-        console.error('Помилка:', error);
-        alert('Не вдалося згенерувати новий приз.');
+        console.error('Error:', error);
+        alert('Failed to generate a new prize.');
     }
 }
 
