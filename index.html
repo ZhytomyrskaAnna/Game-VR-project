@@ -11,51 +11,39 @@
 
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-  <a href="test.html" class="test-link">Test page</a>
-  <!--
-  <div id="control-panel">
-    <button id="generate-button" onclick="generateNewPrize()">
-      Згенерувати новий секретний приз
-    </button>
-    <div id="status-display">Статус: Готово до пошуку!</div>
+
+<div class="container">
+  <div class = "spin">
+    <div class="orbit">
+      <img src="assets/img1.png" style="--i:0;">
+      <img src="assets/img2.png" style="--i:1;">
+      <img src="assets/img3.png" style="--i:2;">
+      <img src="assets/img4.png" style="--i:3;">
+      <img src="assets/img5.png" style="--i:4;">
+      <img src="assets/img6.png" style="--i:5;">
+      <img src="assets/img7.png" style="--i:6;">
+      <img src="assets/img8.png" style="--i:7;">
+      
+      <img src="assets/img9.png" style="--i:7;">
+
+
   </div>
--->
-  <div id="viewfinder">
-  <div id="top-icons">
-    <div class="hud-rec">
-      <span class="rec-dot"></span> REC
-    </div>
-    <div class="hud-top-right">
-      <span class="battery">
-        <span class="battery-level"></span>
-      </span>
-      <span class="bat-percent">84%</span>
-    </div>
+
+        <div class="center-text">
+          <p>1. Натисніть кнопку "ПОЧАТИ ПОШУК"</p>
+          <p>2. Відскануйте маркер</p>
+          <p>3. Отримайте повідомлення про статус призу</p>
+          </div>
+          
+   </div>
+      <button id="start-game-btn" onclick="window.location.href='index2.html'">
+           ПОЧАТИ ПОШУК
+      </button>
+      
   </div>
-  <!-- Bottom Center -->
-  <div class="hud-timer">00:00:20:05</div>
 
-  <!-- Bottom Right -->
-  <div class="hud-menu">MENU ☰</div>
-
-  <!-- FRAME CORNERS -->
-  <div class="corner tl"></div>
-  <div class="corner tr"></div>
-  <div class="corner bl"></div>
-  <div class="corner br"></div>
-
-  <div id="center-crosshair"></div>
-</div>
-  <a-scene embedded vr-mode-ui="enabled: false;"
-    arjs="debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;">
-
-    <a-entity camera></a-entity>
-
-  </a-scene>
-  
-  <script src="markerGenerator.js"></script>
 </body>
-
 
 </html>
