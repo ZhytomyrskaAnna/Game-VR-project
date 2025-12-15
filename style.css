@@ -5,7 +5,7 @@ body {
  margin: 0;
  box-sizing: content-box;
 }
-/*#control-panel {
+/*
   position: absolute;
   top: 30px;
   left: 50%;
@@ -37,7 +37,7 @@ body {
   transition: 0.25s ease;
   background: linear-gradient(135deg, #0055ff, #ff00bf);
 }
-  .test-link {
+
   position: absolute;
   bottom: 16px;
   right: 16px;
@@ -60,6 +60,7 @@ body {
   color: #000000;
   font-size: 8px;
 }
+
 
 
 .test-link:hover {
@@ -176,6 +177,7 @@ body {
   border: 2px solid white;
   border-radius: 50%;
   opacity: 0.8;
+
 }
 /*main*/
 .container{
@@ -242,4 +244,5 @@ body {
   
   transition: 0.25s ease;
   background: linear-gradient(135deg, #0055ff, #ff00bf);
+
 }
