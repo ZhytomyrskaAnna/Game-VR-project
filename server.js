@@ -61,13 +61,13 @@ app.post('/check-marker', (req, res) => {
         prizeMarker = -1; // Приз забрано
         return res.json({ 
             success: true,
-            message: '🎉 Congratulations!\nYou found the prize!',
+            message: 'Congratulations!\nYou found the prize!',
             markerNumber: tempPrize
         });
     } else {
         return res.json({ 
             success: false,
-            message: '❌ There is no prize here.\nTry another marker.',
+            message: 'There is no prize here.\nTry another marker.',
             markerNumber: scannedMarker
         });
     }

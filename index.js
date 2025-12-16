@@ -5,17 +5,17 @@ let statusDisplay = document.getElementById("status-display");
 const SERVER_URL = 'https://game-vr-project.onrender.com'; 
 
 //функція переводу кирилиці в латиницю
-// function transliterate(text) {
-//     const charMap = {
-//         'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'ґ': 'g', 'д': 'd', 'е': 'e', 'є': 'ye',
-//         'ж': 'zh', 'з': 'z', 'и': 'y', 'і': 'i', 'ї': 'yi', 'й': 'y', 'к': 'k', 'л': 'l',
-//         'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-//         'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ю': 'yu', 'я': 'ya',
-//         'ь': '', 'ъ': '', ' ': '_', '.': '', ',': '', '!': '', '?': '', '-': '_'
-//     };
+function transliterate(text) {
+    const charMap = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'ґ': 'g', 'д': 'd', 'е': 'e', 'є': 'ye',
+        'ж': 'zh', 'з': 'z', 'и': 'y', 'і': 'i', 'ї': 'yi', 'й': 'y', 'к': 'k', 'л': 'l',
+        'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ю': 'yu', 'я': 'ya',
+        'ь': '', 'ъ': '', ' ': '_', '.': '', ',': '', '!': '', '?': '', '-': '_'
+    };
 
-//     return text.split('').map(char => charMap[char] || char).join('');
-// }
+    return text.split('').map(char => charMap[char] || char).join('');
+}
 
 AFRAME.registerComponent('look-at-camera', {
     tick: function () {
@@ -56,6 +56,7 @@ AFRAME.registerComponent('prizeslots', {
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
+                    alert(`You found the prize at slot #${data.markerNumber}!`);
                     
                 } else {
                     let textEntity = document.createElement('a-text');
@@ -64,6 +65,7 @@ AFRAME.registerComponent('prizeslots', {
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
                     marker.appendChild(textEntity);
+                    alert(data.message);
                 }
                 
             } catch (error) {
