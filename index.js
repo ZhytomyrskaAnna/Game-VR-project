@@ -51,7 +51,7 @@ AFRAME.registerComponent('prizeslots', {
                 
                 if (data.success) {
                     let textEntity = document.createElement('a-text');
-                    textEntity.setAttribute('value', transliterate(data.message));
+                    textEntity.setAttribute('value', data.message);
                     textEntity.setAttribute('rotation', '180 0 0');
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
@@ -59,7 +59,7 @@ AFRAME.registerComponent('prizeslots', {
                     
                 } else {
                     let textEntity = document.createElement('a-text');
-                    textEntity.setAttribute('value', transliterate(data.message));
+                    textEntity.setAttribute('value', data.message);
                     textEntity.setAttribute('rotation', '180 0 0');
                     textEntity.setAttribute('position', '0 0.5 0');
                     textEntity.setAttribute('scale', '2 2 2');
