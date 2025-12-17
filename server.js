@@ -1,6 +1,7 @@
-
+const express = require('express'); // <-- ЦЬОГО РЯДКА НЕ ВИСТАЧАЛО
 const cors = require('cors');
 const path = require('path');
+
 const app = express();
 const port = process.env.PORT || 3000;
 
@@ -8,80 +9,77 @@ const MAX_MARKER = 12;
 let prizeMarker = -1;
 let lastResetDate = null;
 
+// --- ЛОГИКА ИГРЫ ---
 function generateNewPrizeMarker() {
-    prizeMarker = Math.floor(Math.random() * (MAX_MARKER + 1));
-    lastResetDate = new Date();
-    console.log(`Новий маркер з призом: ${prizeMarker} о ${lastResetDate}`);
+  prizeMarker = Math.floor(Math.random() * (MAX_MARKER + 1));
+  lastResetDate = new Date();
+  console.log(`Новий приз згенеровано: ${prizeMarker} о ${lastResetDate.toISOString()}`);
 }
 
-// Генерація при старті
-if (prizeMarker === -1) {
-    generateNewPrizeMarker();
-}
+if (prizeMarker === -1) generateNewPrizeMarker();
 
-// Перевірка кожну годину для тижневого оновлення
+// Проверка раз в час
 setInterval(() => {
-    const now = new Date();
-    const daysDiff = Math.floor((now - lastResetDate) / (1000 * 60 * 60 * 24));
-    
-    if (daysDiff >= 7) {
-        generateNewPrizeMarker();
-    }
+  if (!lastResetDate) return;
+  const now = new Date();
+  const daysDiff = Math.floor((now - lastResetDate) / (1000 * 60 * 60 * 24));
+  if (daysDiff >= 7) generateNewPrizeMarker();
 }, 60 * 60 * 1000);
 
+// --- НАСТРОЙКИ СЕРВЕРА ---
 app.use(express.json());
 app.use(cors());
+
+// --- МАРШРУТЫ (БЕЗ ПАРОЛЯ) ---
+
+// 1. Страница админа
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
+});
+
+// 2. Статус админа
+app.get('/admin/status', (req, res) => {
+  res.json({ 
+      success: true, 
+      prizeMarker, 
+      lastResetDate: lastResetDate ? lastResetDate.toISOString() : null, 
+      isClaimed: prizeMarker === -1 
+  });
+});
+
+// 3. Генерация нового приза
+app.post('/admin/reset-prize', (req, res) => {
+  generateNewPrizeMarker();
+  res.json({ success: true, message: 'Новий приз згенеровано!', prizeMarker });
+});
+
+// 4. Проверка маркера (для игры)
+app.post('/check-marker', (req, res) => {
+  const scannedMarker = parseInt(req.body.marker, 10);
+  
+  if (isNaN(scannedMarker)) {
+    return res.status(400).json({ success: false, message: 'Невірний формат даних.' });
+  }
+
+  if (prizeMarker === -1) {
+    return res.json({ success: false, message: 'Приз вже знайдено! Чекайте на оновлення.', markerNumber: scannedMarker });
+  }
+
+  if (scannedMarker === prizeMarker) {
+    const found = prizeMarker;
+    prizeMarker = -1; // Приз забрали
+    return res.json({ success: true, message: 'Вітаємо! Ви знайшли приз!', markerNumber: found });
+  }
+
+  return res.json({ success: false, message: 'Тут пусто. Шукайте далі!', markerNumber: scannedMarker });
+});
+
+// 5. Статические файлы (должно быть в конце)
 app.use(express.static(path.join(__dirname)));
 
+// Главная страница
 app.get('/', (req, res) => {
-
     res.sendFile(path.join(__dirname, 'index2.html'));
 });
 
-// Новий ендпоінт для перевірки маркера
-app.post('/check-marker', (req, res) => {
-    const scannedMarker = parseInt(req.body.marker);
-
-    if (isNaN(scannedMarker) || scannedMarker < 0 || scannedMarker > MAX_MARKER) {
-        return res.status(400).json({ 
-            success: false,
-            message: 'Wrong marker\nnumber.' 
-        });
-    }
-
-    if (prizeMarker === -1) {
-        return res.json({ 
-            success: false,
-            message: 'Prize has already been claimed.\nPlease wait for the next one.' 
-        });
-    }
-
-    if (scannedMarker === prizeMarker) {
-        const tempPrize = prizeMarker;
-        prizeMarker = -1; // Приз забрано
-        return res.json({ 
-            success: true,
-            message: 'Congratulations!\nYou found the prize!',
-            markerNumber: tempPrize
-        });
-    } else {
-        return res.json({ 
-            success: false,
-            message: 'There is no prize here.\nTry another marker.',
-            markerNumber: scannedMarker
-        });
-    }
-});
-
-// Ендпоінт для адміністратора (опціонально)
-app.post('/admin/reset-prize', (req, res) => {
-    generateNewPrizeMarker();
-    res.json({ 
-        success: true,
-        message: 'New prize generated!' 
-    });
-});
-
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
-});
+app.listen(port, () => console.log(`Server running on port ${port}`));
