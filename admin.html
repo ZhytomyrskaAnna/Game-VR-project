@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Admin — Prize Generator</title>
+  <style>
+    body{font-family:system-ui,Segoe UI,Roboto,Arial;margin:24px;background:#f7f7f8;color:#111}
+    .card{background:#fff;padding:18px;border-radius:8px;box-shadow:0 6px 18px rgba(0,0,0,.06);max-width:520px}
+    button{padding:8px 12px;border-radius:6px;border:1px solid #ccc;background:#0078d4;color:#fff;cursor:pointer}
+    pre{background:#f0f0f0;padding:8px;border-radius:6px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Admin Panel</h2>
+    <p id="info">Loading status…</p>
+    <pre id="status">—</pre>
+    <div style="margin-top:12px">
+      <button id="resetBtn">Generate new prize</button>
+    </div>
+    <p style="margin-top:12px;font-size:13px;color:#666">This page is protected with HTTP Basic Auth. When prompted by the browser enter the admin credentials.</p>
+  </div>
+
+  <script>
+    // Keep a cached Basic auth token (base64 of user:pass)
+    let cachedAuth = null;
+
+    function promptForCredentials(){
+      const user = prompt('Admin username:', 'admin');
+      if (user === null) return null; // cancelled
+      const pass = prompt('Admin password:');
+      if (pass === null) return null;
+      return btoa(`${user}:${pass}`);
+    }
+
+    async function fetchWithAuth(url, opts = {}, retry = true){
+      opts.headers = opts.headers || {};
+      if (cachedAuth) opts.headers['Authorization'] = 'Basic ' + cachedAuth;
+
+      const res = await fetch(url, opts);
+
+      if (res.status === 401 && retry){
+        // ask for credentials and retry once
+        const token = promptForCredentials();
+        if (!token) throw new Error('Authentication cancelled');
+        cachedAuth = token;
+        opts.headers['Authorization'] = 'Basic ' + cachedAuth;
+        return fetchWithAuth(url, opts, false);
+      }
+
+      return res;
+    }
+
+    async function parseMaybeJson(res){
+      const ct = res.headers.get('content-type') || '';
+      if (ct.includes('application/json')) return res.json();
+      // fallback: return text for non-json responses
+      return { success: false, text: await res.text(), status: res.status };
+    }
+
+    async function loadStatus(){
+      try{
+        const res = await fetchWithAuth('/admin/status', { credentials: 'same-origin', method: 'GET' });
+        if (!res.ok){
+          const body = await parseMaybeJson(res);
+          document.getElementById('info').textContent = `Error ${res.status}`;
+          document.getElementById('status').textContent = JSON.stringify(body, null, 2);
+          return;
+        }
+        const data = await parseMaybeJson(res);
+        document.getElementById('info').textContent = data && data.success ? 'Status:' : 'Response';
+        document.getElementById('status').textContent = JSON.stringify(data, null, 2);
+      }catch(e){ document.getElementById('info').textContent = 'Failed to load status: '+e.message }
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', async ()=>{
+      if(!confirm('Generate a new prize marker now?')) return;
+      try{
+        const res = await fetchWithAuth('/admin/reset-prize', { method: 'POST', credentials: 'same-origin' });
+        const data = await parseMaybeJson(res);
+        alert((data && (data.message || data.text)) || ('Status: ' + res.status));
+        loadStatus();
+      }catch(e){ alert('Request failed: '+e.message) }
+    });
+
+    loadStatus();
+  </script>
+</body>
+</html>
