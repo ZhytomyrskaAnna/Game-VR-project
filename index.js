@@ -5,17 +5,6 @@ let statusDisplay = document.getElementById("status-display");
 const SERVER_URL = 'https://game-vr-project.onrender.com'; 
 
 //функція переводу кирилиці в латиницю
-function transliterate(text) {
-    const charMap = {
-        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'ґ': 'g', 'д': 'd', 'е': 'e', 'є': 'ye',
-        'ж': 'zh', 'з': 'z', 'и': 'y', 'і': 'i', 'ї': 'yi', 'й': 'y', 'к': 'k', 'л': 'l',
-        'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
-        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ю': 'yu', 'я': 'ya',
-        'ь': '', 'ъ': '', ' ': '_', '.': '', ',': '', '!': '', '?': '', '-': '_'
-    };
-
-    return text.split('').map(char => charMap[char] || char).join('');
-}
 
 AFRAME.registerComponent('look-at-camera', {
     tick: function () {
@@ -31,57 +20,87 @@ AFRAME.registerComponent('look-at-camera', {
 });
 
 
+// Змінна для запобігання спаму запитами (Cooldown)
+let isScanning = false;
+
 AFRAME.registerComponent('prizeslots', {
     init: function () {
         let marker = this.el;
 
         marker.addEventListener('markerFound', async function() {
+            // 1. Якщо ми вже скануємо або нещодавно сканували, ігноруємо
+            if (isScanning) return;
+            
+            isScanning = true; // Блокуємо повторні сканування
             const markerValue = marker.getAttribute("value");
             
+            // Показуємо користувачеві, що йде перевірка
+            showOverlayMessage(`Scanning marker #${markerValue}...`, 'info');
+
             try {
                 const response = await fetch(`${SERVER_URL}/check-marker`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ marker: parseInt(markerValue) })
                 });
 
                 const data = await response.json();
                 
+                // 2. Виводимо результат не в alert, а в overlay
                 if (data.success) {
-                    let textEntity = document.createElement('a-text');
-                    textEntity.setAttribute('value', data.message);
-                    textEntity.setAttribute('rotation', '180 0 0');
-                    textEntity.setAttribute('position', '0 0.5 0');
-                    textEntity.setAttribute('scale', '2 2 2');
-                    marker.appendChild(textEntity);
-                    alert(`You found the prize at slot #${data.markerNumber}!`);
-                    
+                    showOverlayMessage(`🎉 ${data.message}`, 'success');
                 } else {
-                    let textEntity = document.createElement('a-text');
-                    textEntity.setAttribute('value', data.message);
-                    textEntity.setAttribute('rotation', '180 0 0');
-                    textEntity.setAttribute('position', '0 0.5 0');
-                    textEntity.setAttribute('scale', '2 2 2');
-                    marker.appendChild(textEntity);
-                    alert(data.message);
+                    showOverlayMessage(`❌ ${data.message}`, 'error');
                 }
                 
             } catch (error) {
                 console.error('Error connecting to server:', error);
-                alert('Error connecting to server. Please check your connection.');
-            }
-        });
-        // якщо на маркер додано текст, видалити його при втраті маркера
-        marker.addEventListener('markerLost', function() {
-            let textEntity = marker.querySelector('a-text');
-            if (textEntity) {
-                marker.removeChild(textEntity);
+                showOverlayMessage('Connection error. Try again.', 'error');
+            } finally {
+                // 3. Розблокуємо сканування через 3 секунди (щоб встигли прибрати камеру)
+                setTimeout(() => {
+                    isScanning = false;
+                }, 3000);
             }
         });
     }
 });
+
+// Функція для показу повідомлень поверх екрану (замість alert)
+function showOverlayMessage(text, type) {
+    let msgDiv = document.getElementById('ar-message-overlay');
+    
+    // Створюємо дів, якщо його немає
+    if (!msgDiv) {
+        msgDiv = document.createElement('div');
+        msgDiv.id = 'ar-message-overlay';
+        msgDiv.style.position = 'fixed';
+        msgDiv.style.top = '10%';
+        msgDiv.style.left = '50%';
+        msgDiv.style.transform = 'translate(-50%, -50%)';
+        msgDiv.style.padding = '15px 25px';
+        msgDiv.style.borderRadius = '10px';
+        msgDiv.style.color = '#fff';
+        msgDiv.style.fontFamily = 'Arial, sans-serif';
+        msgDiv.style.fontWeight = 'bold';
+        msgDiv.style.zIndex = '9999';
+        msgDiv.style.textAlign = 'center';
+        document.body.appendChild(msgDiv);
+    }
+
+    // Кольори залежно від типу
+    if (type === 'success') msgDiv.style.background = 'rgba(40, 167, 69, 0.9)'; // Зелений
+    else if (type === 'error') msgDiv.style.background = 'rgba(220, 53, 69, 0.9)'; // Червоний
+    else msgDiv.style.background = 'rgba(0, 123, 255, 0.9)'; // Синій
+
+    msgDiv.innerText = text;
+    msgDiv.style.display = 'block';
+
+    // Ховаємо повідомлення через 2.5 секунди
+    setTimeout(() => {
+        msgDiv.style.display = 'none';
+    }, 2500);
+}
 
 // Функція для адміністратора (опціонально)
 async function generateNewPrize() {
