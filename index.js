@@ -4,6 +4,18 @@ let statusDisplay = document.getElementById("status-display");
 // URL вашого сервера (змініть після розгортання на Render)
 const SERVER_URL = 'https://game-vr-project.onrender.com'; 
 
+//функція переводу кирилиці в латиницю
+function transliterate(text) {
+    const charMap = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'ґ': 'g', 'д': 'd', 'е': 'e', 'є': 'ye',
+        'ж': 'zh', 'з': 'z', 'и': 'y', 'і': 'i', 'ї': 'yi', 'й': 'y', 'к': 'k', 'л': 'l',
+        'м': 'm', 'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'kh', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'shch', 'ю': 'yu', 'я': 'ya',
+        'ь': '', 'ъ': '', ' ': '_', '.': '', ',': '', '!': '', '?': '', '-': '_'
+    };
+
+    return text.split('').map(char => charMap[char] || char).join('');
+}
 
 AFRAME.registerComponent('look-at-camera', {
     tick: function () {
@@ -37,17 +49,35 @@ AFRAME.registerComponent('prizeslots', {
 
                 const data = await response.json();
                 
-                    if (data.success) {
-                        // Show prize info using a JS alert instead of adding an in-scene text element
-                        alert(`You found the prize at slot #${data.markerNumber}!`);
-                    } else {
-                        // Show feedback via alert only
-                        alert(data.message);
-                    }
+                if (data.success) {
+                    let textEntity = document.createElement('a-text');
+                    textEntity.setAttribute('value', data.message);
+                    textEntity.setAttribute('rotation', '180 0 0');
+                    textEntity.setAttribute('position', '0 0.5 0');
+                    textEntity.setAttribute('scale', '2 2 2');
+                    marker.appendChild(textEntity);
+                    alert(`You found the prize at slot #${data.markerNumber}!`);
+                    
+                } else {
+                    let textEntity = document.createElement('a-text');
+                    textEntity.setAttribute('value', data.message);
+                    textEntity.setAttribute('rotation', '180 0 0');
+                    textEntity.setAttribute('position', '0 0.5 0');
+                    textEntity.setAttribute('scale', '2 2 2');
+                    marker.appendChild(textEntity);
+                    alert(data.message);
+                }
                 
             } catch (error) {
                 console.error('Error connecting to server:', error);
                 alert('Error connecting to server. Please check your connection.');
+            }
+        });
+        // якщо на маркер додано текст, видалити його при втраті маркера
+        marker.addEventListener('markerLost', function() {
+            let textEntity = marker.querySelector('a-text');
+            if (textEntity) {
+                marker.removeChild(textEntity);
             }
         });
     }
@@ -81,32 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
     statusDisplay = document.getElementById("status-display");
     if (statusDisplay) {
         statusDisplay.textContent = "Статус: Готово до пошуку!";
-    }
-    // Start the on-screen stopwatch (HH:MM:SS) each time the page is opened
-    const hudTimerEl = document.querySelector('.hud-timer');
-    if (hudTimerEl) {
-        // Ensure any existing timer is cleared (in case of hot-reload)
-        if (window._prizeHudTimerInterval) {
-            clearInterval(window._prizeHudTimerInterval);
-        }
-
-        function pad(n) {
-            return n.toString().padStart(2, '0');
-        }
-
-        function updateStopwatch(startTimestamp) {
-            const elapsed = Date.now() - startTimestamp;
-            const totalSeconds = Math.floor(elapsed / 1000);
-            const seconds = totalSeconds % 60;
-            const minutes = Math.floor(totalSeconds / 60) % 60;
-            const hours = Math.floor(totalSeconds / 3600);
-            hudTimerEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-        }
-
-        // Initialize and start from zero
-        const startTs = Date.now();
-        updateStopwatch(startTs);
-        window._prizeHudTimerInterval = setInterval(() => updateStopwatch(startTs), 1000);
     }
 });
 
