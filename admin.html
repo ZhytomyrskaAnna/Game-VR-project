@@ -43,20 +43,20 @@
 
     // Обробник кнопки
     btn.addEventListener('click', async () => {
-      if(!confirm('Точно создать новый приз?')) return;
+      if(!confirm('Точно створити новий приз?')) return;
       
       try {
         const res = await fetch('/admin/reset-prize', { method: 'POST' });
         const data = await res.json();
         
         if (data.success) {
-          alert('Успешно: ' + data.message);
+          alert('Успішно: ' + data.message);
           loadStatus(); // Обновляем инфо на экране
         } else {
-          alert('Ошибка: ' + data.message);
+          alert('Помилка: ' + data.message);
         }
       } catch (e) {
-        alert('Ошибка соединения: ' + e.message);
+        alert('Помилка з\'єднання: ' + e.message);
       }
     });
 
