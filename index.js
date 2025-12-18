@@ -139,3 +139,35 @@ function showWinScreen(message, markerNum) {
 
     document.body.appendChild(winDiv);
 }
+document.addEventListener('DOMContentLoaded', () => {
+    statusDisplay = document.getElementById("status-display");
+    if (statusDisplay) {
+        statusDisplay.textContent = "Статус: Готово до пошуку!";
+    }
+    // Start the on-screen stopwatch (HH:MM:SS) each time the page is opened
+    const hudTimerEl = document.querySelector('.hud-timer');
+    if (hudTimerEl) {
+        // Ensure any existing timer is cleared (in case of hot-reload)
+        if (window._prizeHudTimerInterval) {
+            clearInterval(window._prizeHudTimerInterval);
+        }
+
+        function pad(n) {
+            return n.toString().padStart(2, '0');
+        }
+
+        function updateStopwatch(startTimestamp) {
+            const elapsed = Date.now() - startTimestamp;
+            const totalSeconds = Math.floor(elapsed / 1000);
+            const seconds = totalSeconds % 60;
+            const minutes = Math.floor(totalSeconds / 60) % 60;
+            const hours = Math.floor(totalSeconds / 3600);
+            hudTimerEl.textContent = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+
+        // Initialize and start from zero
+        const startTs = Date.now();
+        updateStopwatch(startTs);
+        window._prizeHudTimerInterval = setInterval(() => updateStopwatch(startTs), 1000);
+    }
+});
