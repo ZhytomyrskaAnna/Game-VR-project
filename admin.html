@@ -15,14 +15,14 @@
 </head>
 <body>
   <div class="card">
-    <h2>Админ-панель</h2>
-    <p>Нажми кнопку ниже, чтобы сгенерировать новое местоположение приза.</p>
+    <h2>Адмін-панель</h2>
+    <p>Натисніть кнопку нижче, щоб згенерувати нове місцезнаходження призу.</p>
     
-    <button id="resetBtn">Сгенерировать новый приз</button>
+    <button id="resetBtn">Згенерувати новий приз</button>
     
     <div style="margin-top: 20px;">
-      <strong>Текущий статус:</strong>
-      <pre id="status">Загрузка...</pre>
+      <strong>Поточний статус:</strong>
+      <pre id="status">Завантаження...</pre>
     </div>
   </div>
 
@@ -37,11 +37,11 @@
         const data = await res.json();
         statusEl.textContent = JSON.stringify(data, null, 2);
       } catch (e) {
-        statusEl.textContent = 'Ошибка загрузки: ' + e.message;
+        statusEl.textContent = 'Помилка завантаження: ' + e.message;
       }
     }
 
-    // Обработчик кнопки
+    // Обробник кнопки
     btn.addEventListener('click', async () => {
       if(!confirm('Точно создать новый приз?')) return;
       
