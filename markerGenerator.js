@@ -9,7 +9,7 @@ function generateMarkers() {
         return;
     }
 
-    for (let i = 0; i < NUMBER_OF_MARKERS; i++) {
+    for (let i = 0; i <= NUMBER_OF_MARKERS; i++) {
 
         const marker = document.createElement('a-marker');
         
@@ -20,7 +20,7 @@ function generateMarkers() {
         parentScene.appendChild(marker);
     }
 
-    console.log(`Успішно згенеровано ${NUMBER_OF_MARKERS} маркерів (від 0 до ${NUMBER_OF_MARKERS - 1}).`);
+    console.log(`Успішно згенеровано ${NUMBER_OF_MARKERS} маркерів (від 0 до ${NUMBER_OF_MARKERS}).`);
 }
 
 

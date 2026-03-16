@@ -1,4 +1,4 @@
-const express = require('express'); // <-- ЦЬОГО РЯДКА НЕ ВИСТАЧАЛО
+const express = require('express');
 const cors = require('cors');
 const path = require('path');
 
@@ -74,7 +74,7 @@ app.post('/check-marker', (req, res) => {
   return res.json({ success: false, message: 'Тут пусто. Шукайте далі!', markerNumber: scannedMarker });
 });
 
-// 5. Статические файлы (должно быть в конце)
+
 app.use(express.static(path.join(__dirname)));
 
 // Главная страница
