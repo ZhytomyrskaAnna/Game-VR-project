@@ -171,3 +171,21 @@ document.addEventListener('DOMContentLoaded', () => {
         window._prizeHudTimerInterval = setInterval(() => updateStopwatch(startTs), 1000);
     }
 });
+/*date and time css */
+function updateDateTime() {
+    const now = new Date();
+
+    const time = now.toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const date = now.toLocaleDateString();
+
+    document.getElementById("clock").textContent = time;
+    document.getElementById("date").textContent = date;
+}
+
+setInterval(updateDateTime, 60000);
+updateDateTime();
+/*date and time css */
