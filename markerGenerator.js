@@ -1,4 +1,5 @@
-const NUMBER_OF_MARKERS = 12;
+// 12 маркерів для полювання на призи (0-11) + 12 для відкритого дня (12-23) + 12 для командної гри (24-35)
+const NUMBER_OF_MARKERS = 36;
 
 function generateMarkers() {
     
@@ -25,3 +26,31 @@ function generateMarkers() {
 
 
 document.addEventListener('DOMContentLoaded', generateMarkers);
+
+const markerValue = parseInt(marker.getAttribute("value"));
+
+// Проверяем, относится ли маркер ко Дню открытых дверей
+if (openHouseRoute.includes(markerValue)) {
+    isScanning = true;
+
+    // Получаем текущий прогресс пользователя
+    let currentStep = parseInt(localStorage.getItem('openHouseStep')) || 0;
+    let expectedMarker = openHouseRoute[currentStep];
+
+    if (markerValue === expectedMarker) {
+        // Пользователь нашел правильный маркер по маршруту
+        showInfoModal(openHouseHints[markerValue]);
+        // Продвигаем прогресс
+        if (currentStep < openHouseRoute.length - 1) {
+            localStorage.setItem('openHouseStep', currentStep + 1);
+        }
+    } else if (openHouseRoute.indexOf(markerValue) < currentStep) {
+        // Пользователь сканирует старый маркер, на котором уже был
+        let nextMarker = openHouseRoute[currentStep];
+        showInfoModal(`Ти тут вже був! Твоя наступна актуальна ціль: маркер №${nextMarker}.`);
+    } else {
+        // Пользователь нашел маркер из будущего (забежал вперед)
+        showInfoModal(`Ти знайшов маркер №${markerValue}, але ти ще не пройшов попередні етапи!`);
+    }
+    return; // Прерываем выполнение, чтобы не отправлять запрос на сервер за призом
+}

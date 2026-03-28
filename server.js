@@ -5,13 +5,20 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-const MAX_MARKER = 12;
+
+const markerGroups = {
+    prizeHunt: [0, 1, 2, 3, 4, 5,6, 7, 8, 9, 10, 11], // 12 маркерів для полювання на призи
+    openHouse: [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], // 12 маркерів для відкритого дня
+    teamGame: [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35] // 12 маркерів для командної гри
+};
 let prizeMarker = -1;
 let lastResetDate = null;
 
 // --- ЛОГИКА ИГРЫ ---
 function generateNewPrizeMarker() {
-  prizeMarker = Math.floor(Math.random() * (MAX_MARKER + 1));
+  const huntMarkers = markerGroups.prizeHunt;
+  const randomIndex = Math.floor(Math.random() * huntMarkers.length);
+  prizeMarker = huntMarkers[randomIndex];
   lastResetDate = new Date();
   console.log(`Новий приз згенеровано: ${prizeMarker} о ${lastResetDate.toISOString()}`);
 }
@@ -68,6 +75,9 @@ app.post('/check-marker', (req, res) => {
   if (scannedMarker === prizeMarker) {
     const found = prizeMarker;
     prizeMarker = -1; // Приз забрали
+    // console.log(`Приз знайдено: ${found} о ${new Date().toISOString()}`);
+    const claimTime = new Date().toLocaleString('uk-UA');
+    console.log(`[${claimTime}] ПРИЗ ЗАБРАЛИ! Маркер №${found} тепер порожній.`);
     return res.json({ success: true, message: 'Вітаємо! Ви знайшли приз!', markerNumber: found });
   }
 

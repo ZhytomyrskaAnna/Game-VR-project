@@ -1,6 +1,32 @@
 const MAX_SLOT = 12; 
 let statusDisplay = document.getElementById("status-display");
 
+// Логика сценария для дня открытых дверей и командной игры
+/* const openHouseRoute = [12,13,14,15,16]; // Порядок прохождения
+const openHouseHints = {
+    12: "Ви на старті! Наступна точка: Бібліотека.",
+    13: "Бібліотека пройдена. Шукайте маркер у Кафетерії.",
+    14: "Смачно! Тепер прямуйте до Головної Аудиторії.",
+    15: "Майже фініш! Знайдіть маркер біля Деканату.",
+    16: "Вітаємо! Ви пройшли весь маршрут Дня відкритих дверей!"
+}; 
+const groupFirstGameRoute = [24, 25, 26, 27, 28, 29]; // Порядок прохождения
+const groupSecondGameRoute = [30, 31, 32, 33, 34, 35]; // Порядок прохождения
+const groupGameHints = {
+    24: "Ви на старті! Наступна точка: Бібліотека.",
+    25: "Бібліотека пройдена. Шукайте маркер у Кафетерії.",
+    26: "Смачно! Тепер прямуйте до Головної Аудиторії.",
+    27: "Майже фініш! Знайдіть маркер біля Деканату.",
+    28: "Вітаємо! Ви пройшли весь маршрут Командної гри!"
+};
+const groupGameHints = {
+    30: "Ви на старті! Наступна точка: Бібліотека.",
+    31: "Бібліотека пройдена. Шукайте маркер у Кафетерії.",
+    32: "Смачно! Тепер прямуйте до Головної Аудиторії.",
+    33: "Майже фініш! Знайдіть маркер біля Деканату.",
+    34: "Вітаємо! Ви пройшли весь маршрут Командної гри!"
+}; */
+
 // URL твоего сервера
 const SERVER_URL = 'https://game-vr-project.onrender.com'; 
 
@@ -189,3 +215,40 @@ function updateDateTime() {
 setInterval(updateDateTime, 60000);
 updateDateTime();
 /*date and time css */
+
+
+function showInfoModal(text) {
+    let modal = document.getElementById('ar-info-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'ar-info-modal';
+        modal.style.cssText = `
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: white; padding: 20px; border-radius: 12px; z-index: 99999;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); width: 80%; max-width: 300px;
+            text-align: center; font-family: Arial; color: black;
+        `;
+
+        // Кнопка закрытия
+        let closeBtn = document.createElement('button');
+        closeBtn.innerText = '✖';
+        closeBtn.style.cssText = `
+            position: absolute; top: 10px; right: 10px; background: none; 
+            border: none; font-size: 18px; cursor: pointer; color: #333;
+        `;
+        closeBtn.onclick = () => {
+            modal.style.display = 'none';
+            setTimeout(() => { isScanning = false; }, 1000); // Разблокируем сканер
+        };
+
+        let content = document.createElement('p');
+        content.id = 'ar-info-content';
+
+        modal.appendChild(closeBtn);
+        modal.appendChild(content);
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById('ar-info-content').innerText = text;
+    modal.style.display = 'block';
+}
