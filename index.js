@@ -2,19 +2,31 @@ const MAX_SLOT = 12;
 let statusDisplay = document.getElementById("status-display");
 
 // Логика сценария для дня открытых дверей и командной игры
-const openHouseRoute = [12,13,14,15,16,17,18,19,20,21,22,23]; // Порядок прохождения
+let openHouseRoute = [27,13,14,15,16,17,18,19,20,21,22,23,24,25,26,12,28,29,30]; // Всего маркеров для открытого дня - 19 (12-30)
+let openHouseSteps = 5; // Количество этапов для открытого дня
 const openHouseHints = {
-    12: "Ви на старті! Наступна точка: Бібліотека.",
-    13: "Бібліотека пройдена. Шукайте маркер у Кафетерії.",
-    14: "Смачно! Тепер прямуйте до Головної Аудиторії.",
-    15: "Майже фініш! Знайдіть маркер біля Деканату.",
-    16: "Вітаємо! Ви пройшли весь маршрут Дня відкритих дверей!",
-    17: "Ви на старті! Наступна точка: Бібліотека.",
-    18: "Бібліотека пройдена. Шукайте маркер у Кафетерії.",
-    19: "Смачно! Тепер прямуйте до Головної Аудиторії.",
+    12: "Кабінет 1",
+    13: "Кабінет 2",
+    14: "Кабінет 3",
+    15: "Кабінет 4",
+    16: "Кабінет 5",
+    17: "Кабінет 6",
+    18: "Кабінет 8",
+    19: "Кабінет 9",
+    20: "Кабінет 10",
+    21: "Кабінет 11",
+    22: "Кабінет 13",
+    23: "Кабінет 14",
+    24: "Кабінет 15",
+    25: "Кабінет 16",
+    26: "Кабінет 17",
+    27: "Кабінет 20",
+    28: "Кафітерій",
+    29: "Задній двір",
+    30: "Холл"
 }; 
-const groupFirstGameRoute = [24, 25, 26, 27, 28, 29]; // Порядок прохождения
-const groupSecondGameRoute = [30, 31, 32, 33, 34, 35]; // Порядок прохождения
+/*const groupFirstGameRoute = [24, 25, 26, 27, 28, 29]; 
+const groupSecondGameRoute = [30, 31, 32, 33, 34, 35]; 
 const groupFirstGameHints = {
     24: '',
     25: '',
@@ -28,15 +40,15 @@ const groupSecondGameHints = {
     32: "Смачно! Тепер прямуйте до Головної Аудиторії.",
     33: "Майже фініш! Знайдіть маркер біля Деканату.",
     34: "Вітаємо! Ви пройшли весь маршрут Командної гри!"
-}; 
+}; */
 
 // URL твоего сервера
 const SERVER_URL = 'https://game-vr-project.onrender.com';
 
 AFRAME.registerComponent('look-at-camera', {
     tick: function () {
-        var el = this.el;
-        var cameraEl = document.querySelector('[camera]');
+        let el = this.el;
+        let cameraEl = document.querySelector('[camera]');
         if (!cameraEl) return;
         el.object3D.lookAt(cameraEl.object3D.position);
     }
@@ -45,70 +57,73 @@ AFRAME.registerComponent('look-at-camera', {
 let isScanning = false; // Флаг, идет ли процесс сканирования
 let isWinner = false;   // Флаг, выиграл ли уже игрок
 
+function handleOpenHouseMarker(markerValue) {
+    let currentStep = Number.parseInt(localStorage.getItem('openHouseStep')) || 0;
+    let expectedMarker = openHouseRoute[currentStep];
+
+    if (markerValue === expectedMarker) {
+        if (currentStep < openHouseSteps) {
+            let text = `Ти знайшов маркер в ${openHouseHints[markerValue]}. 
+            Наступний маркер: ${openHouseHints[openHouseRoute[currentStep + 1]]}.`;
+            showInfoModal(text);
+        } else {
+            showInfoModal(`Вітаємо! Ви пройшли всі етапи відкритого дня! Повертайтеся до організаторів.`);
+        }
+        if (currentStep < openHouseRoute.length - 1) {
+            localStorage.setItem('openHouseStep', currentStep + 1);
+        }
+    } else if (openHouseRoute.indexOf(markerValue) < currentStep) {
+        let nextMarker = openHouseHints[openHouseRoute[currentStep]];
+        showInfoModal(`Ти тут вже був! Твоя наступна актуальна ціль: ${nextMarker}.`);
+    } else {
+        showInfoModal(`Ти занадто далеко. Повернись до ${openHouseHints[openHouseRoute[currentStep]]} і шукай там!`);
+    }
+}
+
+async function handleServerMarker(markerValue) {
+    try {
+        const response = await fetch(`${SERVER_URL}/check-marker`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ marker: Number.parseInt(markerValue) })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            isWinner = true;
+            showWinScreen(data.message, data.markerNumber);
+        } else {
+            showOverlayMessage(`❌ ${data.message}`, 'error');
+            setTimeout(() => {
+                if (!isWinner) isScanning = false;
+            }, 3000);
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        showOverlayMessage('Помилка з\'єднання.', 'error');
+        setTimeout(() => { isScanning = false; }, 3000);
+    }
+}
+
 AFRAME.registerComponent('prizeslots', {
     init: function () {
         let marker = this.el;
 
         marker.addEventListener('markerFound', async function () {
-            // Если игрок уже выиграл или идет сканирование — ничего не делаем
             if (isScanning || isWinner) return;
 
             isScanning = true;
             const markerValue = Number.parseInt(marker.getAttribute("value"))
 
-            // Показываем временное сообщение "Сканирую..."
             showOverlayMessage(`Перевірка маркера №${markerValue}...`, 'info');
+            
             if (openHouseRoute.includes(markerValue)) {
-                isScanning = true;
-
-                // Получаем текущий прогресс пользователя
-                let currentStep = parseInt(localStorage.getItem('openHouseStep')) || 0;
-                let expectedMarker = openHouseRoute[currentStep];
-
-                if (markerValue === expectedMarker) {
-                    // Пользователь нашел правильный маркер по маршруту
-                    showInfoModal(openHouseHints[markerValue]);
-                    // Продвигаем прогресс
-                    if (currentStep < openHouseRoute.length - 1) {
-                        localStorage.setItem('openHouseStep', currentStep + 1);
-                    }
-                } else if (openHouseRoute.indexOf(markerValue) < currentStep) {
-                    // Пользователь сканирует старый маркер, на котором уже был
-                    let nextMarker = openHouseRoute[currentStep];
-                    showInfoModal(`Ти тут вже був! Твоя наступна актуальна ціль: маркер №${nextMarker} в .`);
-                } else {
-                    // Пользователь нашел маркер из будущего (забежал вперед)
-                    showInfoModal(`Ти знайшов маркер №${markerValue}, але ти ще не пройшов попередні етапи!`);
-                }
-                return; // Прерываем выполнение, чтобы не отправлять запрос на сервер за призом
+                handleOpenHouseMarker(markerValue);
+                return;
             }
-            try {
-                const response = await fetch(`${SERVER_URL}/check-marker`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ marker: parseInt(markerValue) })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    // === ПОБЕДА! ===
-                    isWinner = true; // Блокуємо подальші сканування назавжди
-                    showWinScreen(data.message, data.markerNumber); // Викликаємо ВІЧНИЙ екран
-                } else {
-                    // === НЕУДАЧА ===
-                    showOverlayMessage(`❌ ${data.message}`, 'error');
-                    // Разблокируем сканер через 3 секунды для новой попытки
-                    setTimeout(() => {
-                        if (!isWinner) isScanning = false;
-                    }, 3000);
-                }
-
-            } catch (error) {
-                console.error('Error:', error);
-                showOverlayMessage('Помилка з\'єднання.', 'error');
-                setTimeout(() => { isScanning = false; }, 3000);
-            }
+            
+            await handleServerMarker(markerValue);
         });
     }
 });
@@ -120,7 +135,6 @@ function showOverlayMessage(text, type) {
     if (!msgDiv) {
         msgDiv = document.createElement('div');
         msgDiv.id = 'ar-message-overlay';
-        // Стили для маленького уведомления
         msgDiv.style.position = 'fixed';
         msgDiv.style.top = '15%';
         msgDiv.style.left = '50%';
@@ -142,10 +156,10 @@ function showOverlayMessage(text, type) {
     msgDiv.innerText = text;
     msgDiv.style.display = 'block';
 
-    // Исчезает через 2.5 сек
+    // Исчезает через 3 сек
     setTimeout(() => {
         msgDiv.style.display = 'none';
-    }, 2500);
+    }, 3000);
 }
 
 // 2. ЭКРАН ПОБЕДИТЕЛЯ (Вечный и на весь экран)
@@ -200,8 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const hudTimerEl = document.querySelector('.hud-timer');
     if (hudTimerEl) {
         // Ensure any existing timer is cleared (in case of hot-reload)
-        if (window._prizeHudTimerInterval) {
-            clearInterval(window._prizeHudTimerInterval);
+        if (globalThis._prizeHudTimerInterval) {
+            clearInterval(globalThis._prizeHudTimerInterval);
         }
 
         function pad(n) {
@@ -220,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Initialize and start from zero
         const startTs = Date.now();
         updateStopwatch(startTs);
-        window._prizeHudTimerInterval = setInterval(() => updateStopwatch(startTs), 1000);
+        globalThis._prizeHudTimerInterval = setInterval(() => updateStopwatch(startTs), 1000);
     }
 });
 /*date and time css */
