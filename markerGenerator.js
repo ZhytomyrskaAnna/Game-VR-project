@@ -10,7 +10,7 @@ function generateMarkers() {
         return;
     }
 
-    for (let i = 0; i <= NUMBER_OF_MARKERS; i++) {
+    for (let i = 0; i < NUMBER_OF_MARKERS; i++) {
 
         const marker = document.createElement('a-marker');
         

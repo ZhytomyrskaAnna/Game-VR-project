@@ -1,12 +1,13 @@
-const MAX_SLOT = 12;
+
 let statusDisplay = document.getElementById("status-display");
 
 // Логика сценария для дня открытых дверей и командной игры
 // let openHouseRoute = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]; // Всего маркеров для открытого дня - 19 (12-30)
+let startOpenHouse = false; // Флаг, начали ли маршрут открытого дня
 let openHouseRoute = [12, 28, 30, 13]; // Всего маркеров для открытого дня - 12 (12-23)
 let openHouseSteps = 5; // Количество этапов для открытого дня
 const openHouseHints = {
-    12: "Кабінет 20",
+    12: "Старт",
     13: "Кабінет 1",
     14: "Кабінет 2",
     15: "Кабінет 3",
@@ -59,18 +60,29 @@ let isScanning = false; // Флаг, идет ли процесс сканиро
 let isWinner = false;   // Флаг, выиграл ли уже игрок
 
 function handleOpenHouseMarker(markerValue) {
+
+    if(markerValue === openHouseRoute[0] && !startOpenHouse) {
+        showInfoModal(`Вітаємо! Ви почали маршрут відкритого дня! Ваш перший пункт в локації: ${openHouseHints[markerValue]+1}.`);
+        startOpenHouse = true;
+        localStorage.setItem('openHouseStep', 1);
+    }
+
+    if(!startOpenHouse) {
+        showInfoModal(`Ви не почали маршрут відкритого дня.`);
+        return;
+    }
+
     let currentStep = Number.parseInt(localStorage.getItem('openHouseStep')) || 0;
     let expectedMarker = openHouseRoute[currentStep];
-
+    
     if (markerValue === expectedMarker) {
-        if (currentStep == 0) {
-            showInfoModal(`Вітаємо! Ви почали маршрут відкритого дня! Ваш перший пункт в локації: ${openHouseHints[markerValue]+1}.`);
-        } else if (currentStep < openHouseRoute.length - 1) {
-            let text = `Ти знайшов маркер в локації ${openHouseHints[markerValue]}. 
-            Наступний маркер в локації: ${openHouseHints[openHouseRoute[currentStep + 1]]}.`;
-            showInfoModal(text);
+        if (currentStep < openHouseRoute.length - 1) {
+            showInfoModal(`Ти знайшов маркер в локації ${openHouseHints[markerValue]}. 
+            Наступний маркер в локації: ${openHouseHints[openHouseRoute[currentStep + 1]]}.`);
         } else {
             showInfoModal(`Вітаємо! Ви пройшли всі етапи відкритого дня! Повертайтеся до організаторів.`);
+            currentStep++; // Устанавливаем значение, превышающее последний индекс, чтобы блокировать дальнейшие шаги
+            startOpenHouse = false;
         }
         if (currentStep < openHouseRoute.length - 1) {
             localStorage.setItem('openHouseStep', currentStep + 1);

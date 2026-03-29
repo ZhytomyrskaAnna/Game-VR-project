@@ -62,9 +62,9 @@ app.post('/admin/reset-prize', (req, res) => {
 
 // 4. Проверка маркера (для игры)
 app.post('/check-marker', (req, res) => {
-  const scannedMarker = parseInt(req.body.marker, 10);
+  const scannedMarker = Number.parseInt(req.body.marker, 10);
   
-  if (isNaN(scannedMarker)) {
+  if (Number.isNaN(scannedMarker)) {
     return res.status(400).json({ success: false, message: 'Невірний формат даних.' });
   }
 
