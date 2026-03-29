@@ -2,25 +2,25 @@ const MAX_SLOT = 12;
 let statusDisplay = document.getElementById("status-display");
 
 // Логика сценария для дня открытых дверей и командной игры
-let openHouseRoute = [27,13,14,15,16,17,18,19,20,21,22,23,24,25,26,12,28,29,30]; // Всего маркеров для открытого дня - 19 (12-30)
+let openHouseRoute = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]; // Всего маркеров для открытого дня - 19 (12-30)
 let openHouseSteps = 5; // Количество этапов для открытого дня
 const openHouseHints = {
-    12: "Кабінет 1",
-    13: "Кабінет 2",
-    14: "Кабінет 3",
-    15: "Кабінет 4",
-    16: "Кабінет 5",
-    17: "Кабінет 6",
-    18: "Кабінет 8",
-    19: "Кабінет 9",
-    20: "Кабінет 10",
-    21: "Кабінет 11",
-    22: "Кабінет 13",
-    23: "Кабінет 14",
-    24: "Кабінет 15",
-    25: "Кабінет 16",
-    26: "Кабінет 17",
-    27: "Кабінет 20",
+    12: "Кабінет 20",
+    13: "Кабінет 1",
+    14: "Кабінет 2",
+    15: "Кабінет 3",
+    16: "Кабінет 4",
+    17: "Кабінет 5",
+    18: "Кабінет 6",
+    19: "Кабінет 8",
+    20: "Кабінет 9",
+    21: "Кабінет 10",
+    22: "Кабінет 11",
+    23: "Кабінет 13",
+    24: "Кабінет 14",
+    25: "Кабінет 15",
+    26: "Кабінет 16",
+    27: "Кабінет 17",
     28: "Кафітерій",
     29: "Задній двір",
     30: "Холл"
@@ -62,7 +62,9 @@ function handleOpenHouseMarker(markerValue) {
     let expectedMarker = openHouseRoute[currentStep];
 
     if (markerValue === expectedMarker) {
-        if (currentStep < openHouseSteps) {
+        if (currentStep == 0) {
+            showInfoModal(`Вітаємо! Ви почали маршрут відкритого дня! Ваш перший пункт: ${openHouseHints[markerValue]}.`);
+        } else if (currentStep < openHouseSteps) {
             let text = `Ти знайшов маркер в ${openHouseHints[markerValue]}. 
             Наступний маркер: ${openHouseHints[openHouseRoute[currentStep + 1]]}.`;
             showInfoModal(text);
