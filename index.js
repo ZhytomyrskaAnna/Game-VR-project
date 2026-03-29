@@ -2,7 +2,8 @@ const MAX_SLOT = 12;
 let statusDisplay = document.getElementById("status-display");
 
 // Логика сценария для дня открытых дверей и командной игры
-let openHouseRoute = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]; // Всего маркеров для открытого дня - 19 (12-30)
+// let openHouseRoute = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]; // Всего маркеров для открытого дня - 19 (12-30)
+let openHouseRoute = [12, 28, 30]; // Всего маркеров для открытого дня - 12 (12-23)
 let openHouseSteps = 5; // Количество этапов для открытого дня
 const openHouseHints = {
     12: "Кабінет 20",
@@ -63,7 +64,7 @@ function handleOpenHouseMarker(markerValue) {
 
     if (markerValue === expectedMarker) {
         if (currentStep == 0) {
-            showInfoModal(`Вітаємо! Ви почали маршрут відкритого дня! Ваш перший пункт: ${openHouseHints[markerValue]}.`);
+            showInfoModal(`Вітаємо! Ви почали маршрут відкритого дня! Ваш перший пункт: ${openHouseHints[markerValue]+1}.`);
         } else if (currentStep < openHouseSteps) {
             let text = `Ти знайшов маркер в ${openHouseHints[markerValue]}. 
             Наступний маркер: ${openHouseHints[openHouseRoute[currentStep + 1]]}.`;
