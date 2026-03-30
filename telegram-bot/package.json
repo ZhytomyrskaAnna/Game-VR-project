@@ -1,0 +1,16 @@
+{
+  "name": "game-vr-telegram-bot",
+  "version": "1.0.0",
+  "description": "Telegram bot for Game VR project admin panel",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js"
+  },
+  "dependencies": {
+    "node-telegram-bot-api": "^0.66.0",
+    "uuid": "^9.0.0",
+    "@aws-sdk/client-dynamodb": "^3.500.0",
+    "@aws-sdk/lib-dynamodb": "^3.500.0"
+  }
+}

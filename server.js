@@ -19,6 +19,29 @@ let currentOpenHouseRoute = [12, 28, 30, 13];
 // Массив всех возможных маркеров для Дня открытых дверей (исключая 12)
 const openHousePool = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
 
+// --- ЛОКАЦІЇ (in-memory, дефолтні значення) ---
+const locations = {
+  12: 'Старт',
+  13: 'Кабінет 1',
+  14: 'Кабінет 2',
+  15: 'Кабінет 3',
+  16: 'Кабінет 4',
+  17: 'Кабінет 5',
+  18: 'Кабінет 6',
+  19: 'Кабінет 7',
+  20: 'Кабінет 8',
+  21: 'Кабінет 9',
+  22: 'Кабінет 10',
+  23: 'Кабінет 11',
+  24: 'Кабінет 12',
+  25: 'Кабінет 13',
+  26: 'Кабінет 14',
+  27: 'Кабінет 15',
+  28: 'Кафітерій',
+  29: 'Задній двір',
+  30: 'Холл',
+};
+
 
 
 
@@ -94,6 +117,18 @@ app.post('/check-marker', (req, res) => {
 
 
 
+// 5. Обнуление приза (бот: "приз знайдено")
+app.post('/bot/claim-prize', (req, res) => {
+    if (prizeMarker === -1) {
+        return res.json({ success: false, message: 'Приз вже було забрано.' });
+    }
+    const claimed = prizeMarker;
+    prizeMarker = -1;
+    const claimTime = new Date().toLocaleString('uk-UA');
+    console.log(`[${claimTime}] Бот обнулив приз. Маркер №${claimed}.`);
+    res.json({ success: true, message: `Приз (маркер №${claimed}) обнулено.`, claimedMarker: claimed });
+});
+
 // 1. Клиент запрашивает актуальный маршрут
 app.get('/api/open-house-route', (req, res) => {
     res.json({ success: true, route: currentOpenHouseRoute });
@@ -126,6 +161,34 @@ app.post('/bot/random-route', (req, res) => {
     
     console.log(`Бот згенерував випадковий маршрут: ${currentOpenHouseRoute}`);
     res.json({ success: true, route: currentOpenHouseRoute });
+});
+
+// --- ЛОКАЦІЇ API ---
+
+app.get('/api/locations', (req, res) => {
+    res.json({ success: true, locations });
+});
+
+app.post('/api/locations', (req, res) => {
+    const { markerId, name } = req.body;
+    const id = Number(markerId);
+    if (isNaN(id) || !name || typeof name !== 'string') {
+        return res.status(400).json({ success: false, message: 'Потрібні markerId (число) та name (текст).' });
+    }
+    locations[id] = name.trim();
+    console.log(`Локацію оновлено: маркер ${id} → "${locations[id]}"`);
+    res.json({ success: true, markerId: id, name: locations[id] });
+});
+
+app.delete('/api/locations/:id', (req, res) => {
+    const id = Number(req.params.id);
+    if (!(id in locations)) {
+        return res.status(404).json({ success: false, message: 'Локацію не знайдено.' });
+    }
+    const name = locations[id];
+    delete locations[id];
+    console.log(`Локацію видалено: маркер ${id} ("${name}")`);
+    res.json({ success: true, message: `Локацію "${name}" (маркер ${id}) видалено.` });
 });
 
 app.use(express.static(path.join(__dirname)));

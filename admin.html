@@ -6,62 +6,231 @@
   <title>Admin Panel</title>
   <style>
     body { font-family: Arial, sans-serif; margin: 24px; background: #f4f4f4; }
-    .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: 0 auto; }
-    button { padding: 10px 20px; border-radius: 5px; border: none; background: #28a745; color: #fff; font-size: 16px; cursor: pointer; }
+    .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 600px; margin: 12px auto; }
+    button { padding: 10px 20px; border-radius: 5px; border: none; background: #28a745; color: #fff; font-size: 14px; cursor: pointer; margin: 4px; }
     button:hover { background: #218838; }
+    button.danger { background: #dc3545; }
+    button.danger:hover { background: #c82333; }
+    button.secondary { background: #6c757d; }
+    button.secondary:hover { background: #5a6268; }
     pre { background: #eee; padding: 10px; border-radius: 5px; overflow-x: auto; }
     h2 { margin-top: 0; }
+    h3 { margin-top: 0; color: #333; }
+    .route-list { list-style: none; padding: 0; }
+    .route-list li { padding: 6px 0; border-bottom: 1px solid #eee; }
+    .loc-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid #eee; }
+    .loc-row span { flex: 1; }
+    input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .route-builder { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+    .route-builder button { padding: 8px 12px; font-size: 13px; }
+    .route-builder button.selected { background: #007bff; }
+    #routeDraft { margin: 10px 0; padding: 10px; background: #e9ecef; border-radius: 5px; min-height: 20px; }
   </style>
 </head>
 <body>
+
+  <!-- Prize Section -->
   <div class="card">
-    <h2>Адмін-панель</h2>
-    <p>Натисніть кнопку нижче, щоб згенерувати нове місцезнаходження призу.</p>
-    
-    <button id="resetBtn">Згенерувати новий приз</button>
-    
-    <div style="margin-top: 20px;">
-      <strong>Поточний статус:</strong>
-      <pre id="status">Завантаження...</pre>
+    <h3>Приз</h3>
+    <div id="prizeStatus">Завантаження...</div>
+    <div style="margin-top: 12px;">
+      <button id="resetBtn">Новий приз</button>
+      <button id="claimBtn" class="danger">Приз знайдено (обнулити)</button>
+    </div>
+  </div>
+
+  <!-- Route Section -->
+  <div class="card">
+    <h3>Маршрут</h3>
+    <div id="currentRoute">Завантаження...</div>
+    <hr>
+    <h3>Створити маршрут</h3>
+    <p>Старт (маркер 12) додається автоматично.</p>
+    <div id="routeDraft"></div>
+    <div class="route-builder" id="routePicker"></div>
+    <div>
+      <button id="routeSaveBtn" class="secondary">Зберегти маршрут</button>
+      <button id="routeClearBtn" class="secondary">Очистити</button>
+    </div>
+  </div>
+
+  <!-- Locations Section -->
+  <div class="card">
+    <h3>Локації</h3>
+    <div id="locationsList"></div>
+    <hr>
+    <h3>Додати / Редагувати локацію</h3>
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+      <input id="locId" type="number" placeholder="ID маркера" style="width: 100px;">
+      <input id="locName" type="text" placeholder="Назва">
+      <button id="locSaveBtn">Зберегти</button>
     </div>
   </div>
 
   <script>
-    const statusEl = document.getElementById('status');
-    const btn = document.getElementById('resetBtn');
+    // --- STATE ---
+    let locations = {};
+    let routeDraft = [12];
 
-    // Функция для получения статуса
-    async function loadStatus() {
-      try {
-        const res = await fetch('/admin/status');
-        const data = await res.json();
-        statusEl.textContent = JSON.stringify(data, null, 2);
-      } catch (e) {
-        statusEl.textContent = 'Помилка завантаження: ' + e.message;
-      }
+    // --- HELPERS ---
+    async function api(method, path, body) {
+      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(path, opts);
+      return res.json();
     }
 
-    // Обробник кнопки
-    btn.addEventListener('click', async () => {
-      if(!confirm('Точно створити новий приз?')) return;
-      
-      try {
-        const res = await fetch('/admin/reset-prize', { method: 'POST' });
-        const data = await res.json();
-        
-        if (data.success) {
-          alert('Успішно: ' + data.message);
-          loadStatus(); // Обновляем инфо на экране
-        } else {
-          alert('Помилка: ' + data.message);
-        }
-      } catch (e) {
-        alert('Помилка з\'єднання: ' + e.message);
+    function locName(id) {
+      return locations[id] || 'Маркер ' + id;
+    }
+
+    // --- PRIZE ---
+    async function loadPrize() {
+      const data = await api('GET', '/admin/status');
+      const el = document.getElementById('prizeStatus');
+      if (!data.success) { el.textContent = 'Помилка'; return; }
+      const status = data.isClaimed ? 'Знайдено (обнулено)' : 'Активний';
+      const marker = data.isClaimed ? '---' : '№' + data.prizeMarker;
+      const created = data.lastResetDate ? new Date(data.lastResetDate).toLocaleString('uk-UA') : '---';
+      el.innerHTML = '<b>Маркер:</b> ' + marker + '<br><b>Створено:</b> ' + created + '<br><b>Стан:</b> ' + status;
+    }
+
+    document.getElementById('resetBtn').addEventListener('click', async () => {
+      if (!confirm('Згенерувати новий приз?')) return;
+      const data = await api('POST', '/admin/reset-prize');
+      alert(data.message);
+      loadPrize();
+    });
+
+    document.getElementById('claimBtn').addEventListener('click', async () => {
+      if (!confirm('Обнулити приз (приз знайдено)?')) return;
+      const data = await api('POST', '/bot/claim-prize');
+      alert(data.message);
+      loadPrize();
+    });
+
+    // --- ROUTE ---
+    async function loadRoute() {
+      const data = await api('GET', '/api/open-house-route');
+      const el = document.getElementById('currentRoute');
+      if (!data.success) { el.textContent = 'Помилка'; return; }
+      el.innerHTML = '<b>Поточний маршрут:</b><ol>' +
+        data.route.map(m => '<li>' + locName(m) + ' (маркер ' + m + ')</li>').join('') +
+        '</ol>';
+    }
+
+    function renderRouteDraft() {
+      const el = document.getElementById('routeDraft');
+      el.innerHTML = routeDraft.map((m, i) => (i + 1) + '. ' + locName(m)).join(' → ');
+    }
+
+    function renderRoutePicker() {
+      const picker = document.getElementById('routePicker');
+      const chosen = new Set(routeDraft);
+      const available = Object.keys(locations).map(Number).filter(m => m !== 12 && !chosen.has(m));
+
+      picker.innerHTML = '';
+      available.forEach(m => {
+        const btn = document.createElement('button');
+        btn.textContent = locName(m);
+        btn.className = 'secondary';
+        btn.addEventListener('click', () => {
+          routeDraft.push(m);
+          renderRouteDraft();
+          renderRoutePicker();
+        });
+        picker.appendChild(btn);
+      });
+    }
+
+    document.getElementById('routeSaveBtn').addEventListener('click', async () => {
+      if (routeDraft.length < 2) { alert('Додайте хоча б одну точку.'); return; }
+      if (!confirm('Зберегти маршрут?')) return;
+      const data = await api('POST', '/bot/set-route', { route: routeDraft });
+      if (data.success) {
+        alert('Маршрут збережено!');
+        loadRoute();
+      } else {
+        alert('Помилка: ' + data.message);
       }
     });
 
-    // Загружаем статус при открытии страницы
-    loadStatus();
+    document.getElementById('routeClearBtn').addEventListener('click', () => {
+      routeDraft = [12];
+      renderRouteDraft();
+      renderRoutePicker();
+    });
+
+    // --- LOCATIONS ---
+    async function loadLocations() {
+      const data = await api('GET', '/api/locations');
+      if (!data.success) return;
+      locations = data.locations;
+
+      const el = document.getElementById('locationsList');
+      const entries = Object.entries(locations);
+      if (entries.length === 0) { el.textContent = 'Немає локацій.'; return; }
+
+      el.innerHTML = '';
+      entries.forEach(([id, name]) => {
+        const row = document.createElement('div');
+        row.className = 'loc-row';
+
+        const span = document.createElement('span');
+        span.innerHTML = '<b>' + id + '</b> — ';
+        span.appendChild(document.createTextNode(name));
+        row.appendChild(span);
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'secondary';
+        editBtn.textContent = 'Ред.';
+        editBtn.addEventListener('click', () => editLoc(Number(id), name));
+        row.appendChild(editBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'danger';
+        delBtn.textContent = 'X';
+        delBtn.addEventListener('click', () => deleteLoc(Number(id)));
+        row.appendChild(delBtn);
+
+        el.appendChild(row);
+      });
+
+      // Refresh dependent views
+      renderRouteDraft();
+      renderRoutePicker();
+      loadRoute();
+    }
+
+    function editLoc(id, name) {
+      document.getElementById('locId').value = id;
+      document.getElementById('locName').value = name;
+    }
+
+    async function deleteLoc(id) {
+      if (!confirm('Видалити локацію "' + locName(id) + '"?')) return;
+      const data = await api('DELETE', '/api/locations/' + id);
+      alert(data.message);
+      loadLocations();
+    }
+
+    document.getElementById('locSaveBtn').addEventListener('click', async () => {
+      const id = document.getElementById('locId').value;
+      const name = document.getElementById('locName').value.trim();
+      if (!id || !name) { alert('Заповніть ID маркера та назву.'); return; }
+      const data = await api('POST', '/api/locations', { markerId: Number(id), name });
+      if (data.success) {
+        alert('Збережено: маркер ' + data.markerId + ' → "' + data.name + '"');
+        document.getElementById('locId').value = '';
+        document.getElementById('locName').value = '';
+        loadLocations();
+      } else {
+        alert('Помилка: ' + data.message);
+      }
+    });
+
+    // --- INIT ---
+    Promise.all([loadLocations(), loadPrize()]);
   </script>
 </body>
 </html>
