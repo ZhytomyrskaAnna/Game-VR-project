@@ -1,18 +1,12 @@
-const { MongoClient } = require('mongodb');
 const crypto = require('crypto');
 
 class AdminStore {
-  constructor({ mongoUrl, dbName = 'game-vr-bot', ownerChatId }) {
-    this.client = new MongoClient(mongoUrl);
-    this.dbName = dbName;
+  constructor({ db, ownerChatId }) {
+    this.db = db;
     this.ownerChatId = Number(ownerChatId);
-    this.db = null;
   }
 
-  async connect() {
-    await this.client.connect();
-    this.db = this.client.db(this.dbName);
-    // TTL index: auto-delete expired invites
+  async init() {
     await this.db.collection('invites').createIndex(
       { expiresAt: 1 },
       { expireAfterSeconds: 0 }
@@ -54,7 +48,7 @@ class AdminStore {
     await this.db.collection('invites').insertOne({
       token,
       createdBy: Number(createdBy),
-      expiresAt: new Date(Date.now() + 86400000), // 24 hours
+      expiresAt: new Date(Date.now() + 86400000),
     });
     return token;
   }

@@ -1,210 +1,237 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const { MongoClient } = require('mongodb');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-
 const markerGroups = {
-    prizeHunt: [0, 1, 2, 3, 4, 5,6, 7, 8, 9, 10, 11], // 12 маркерів для полювання на призи
-    openHouse: [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], // 12 маркерів для відкритого дня
-    teamGame: [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35] // 12 маркерів для командної гри
+    prizeHunt: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    openHouse: [12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
+    teamGame: [24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35]
 };
-let prizeMarker = -1;
-let lastResetDate = null;
-
-// Изначальный маршрут для Дня открытых дверей (можно изменить через админку или ботом)
-let currentOpenHouseRoute = [12, 28, 30, 13];
-// Массив всех возможных маркеров для Дня открытых дверей (исключая 12)
 const openHousePool = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
 
-// --- ЛОКАЦІЇ (in-memory, дефолтні значення) ---
-const locations = {
-  12: 'Старт',
-  13: 'Кабінет 1',
-  14: 'Кабінет 2',
-  15: 'Кабінет 3',
-  16: 'Кабінет 4',
-  17: 'Кабінет 5',
-  18: 'Кабінет 6',
-  19: 'Кабінет 7',
-  20: 'Кабінет 8',
-  21: 'Кабінет 9',
-  22: 'Кабінет 10',
-  23: 'Кабінет 11',
-  24: 'Кабінет 12',
-  25: 'Кабінет 13',
-  26: 'Кабінет 14',
-  27: 'Кабінет 15',
-  28: 'Кафітерій',
-  29: 'Задній двір',
-  30: 'Холл',
+const DEFAULT_LOCATIONS = {
+  12: 'Старт', 13: 'Кабінет 1', 14: 'Кабінет 2', 15: 'Кабінет 3',
+  16: 'Кабінет 4', 17: 'Кабінет 5', 18: 'Кабінет 6', 19: 'Кабінет 7',
+  20: 'Кабінет 8', 21: 'Кабінет 9', 22: 'Кабінет 10', 23: 'Кабінет 11',
+  24: 'Кабінет 12', 25: 'Кабінет 13', 26: 'Кабінет 14', 27: 'Кабінет 15',
+  28: 'Кафітерій', 29: 'Задній двір', 30: 'Холл',
 };
 
+let db;
 
+// --- HELPERS ---
+const game = () => db.collection('game');
+const locs = () => db.collection('locations');
 
-
-// --- ЛОГИКА ИГРЫ ---
-function generateNewPrizeMarker() {
-  const huntMarkers = markerGroups.prizeHunt;
-  const randomIndex = Math.floor(Math.random() * huntMarkers.length);
-  prizeMarker = huntMarkers[randomIndex];
-  lastResetDate = new Date();
-  console.log(`Новий приз згенеровано: ${prizeMarker} о ${lastResetDate.toLocaleString('uk-UA')}`);
+async function getPrize() {
+  return await game().findOne({ _id: 'prize' });
 }
 
-if (prizeMarker === -1) generateNewPrizeMarker();
-
-// Проверка раз в час
-setInterval(() => {
-  if (!lastResetDate) return;
+async function generateNewPrizeMarker() {
+  const huntMarkers = markerGroups.prizeHunt;
+  const marker = huntMarkers[Math.floor(Math.random() * huntMarkers.length)];
   const now = new Date();
-  const daysDiff = Math.floor((now - lastResetDate) / (1000 * 60 * 60 * 24));
-  if (daysDiff >= 7) generateNewPrizeMarker();
-}, 60 * 60 * 1000);
+  await game().updateOne(
+    { _id: 'prize' },
+    { $set: { prizeMarker: marker, lastResetDate: now, isClaimed: false } },
+    { upsert: true }
+  );
+  console.log(`Новий приз згенеровано: ${marker} о ${now.toLocaleString('uk-UA')}`);
+  return marker;
+}
+
+async function getRoute() {
+  const doc = await game().findOne({ _id: 'route' });
+  return doc?.route || [12, 28, 30, 13];
+}
+
+async function setRoute(route) {
+  await game().updateOne(
+    { _id: 'route' },
+    { $set: { route } },
+    { upsert: true }
+  );
+}
+
+async function getLocations() {
+  const docs = await locs().find().toArray();
+  const result = {};
+  docs.forEach(d => { result[d.markerId] = d.name; });
+  return result;
+}
+
+async function seedDefaults() {
+  // Seed locations if empty
+  const count = await locs().countDocuments();
+  if (count === 0) {
+    const docs = Object.entries(DEFAULT_LOCATIONS).map(([id, name]) => ({
+      markerId: Number(id), name
+    }));
+    await locs().insertMany(docs);
+    console.log('Default locations seeded.');
+  }
+  // Seed prize if not exists
+  const prize = await getPrize();
+  if (!prize) {
+    await generateNewPrizeMarker();
+  }
+}
 
 // --- НАСТРОЙКИ СЕРВЕРА ---
 app.use(express.json());
 app.use(cors());
 
-// --- МАРШРУТЫ (БЕЗ ПАРОЛЯ) ---
+// --- МАРШРУТЫ ---
 
-// 1. Страница админа
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-// 2. Статус админа
-app.get('/admin/status', (req, res) => {
-  res.json({ 
-      success: true, 
-      prizeMarker, 
-      lastResetDate: lastResetDate || null, 
-      isClaimed: prizeMarker === -1 
+app.get('/admin/status', async (req, res) => {
+  const prize = await getPrize();
+  res.json({
+    success: true,
+    prizeMarker: prize?.prizeMarker ?? -1,
+    lastResetDate: prize?.lastResetDate || null,
+    isClaimed: prize?.isClaimed ?? true
   });
 });
 
-// 3. Генерация нового приза
-app.post('/admin/reset-prize', (req, res) => {
-  generateNewPrizeMarker();
-  res.json({ success: true, message: 'Новий приз згенеровано!', prizeMarker });
+app.post('/admin/reset-prize', async (req, res) => {
+  const marker = await generateNewPrizeMarker();
+  res.json({ success: true, message: 'Новий приз згенеровано!', prizeMarker: marker });
 });
 
-// 4. Проверка маркера (для игры)
-app.post('/check-marker', (req, res) => {
+app.post('/check-marker', async (req, res) => {
   const scannedMarker = Number.parseInt(req.body.marker, 10);
-  
   if (Number.isNaN(scannedMarker)) {
     return res.status(400).json({ success: false, message: 'Невірний формат даних.' });
   }
 
-  if (prizeMarker === -1) {
+  const prize = await getPrize();
+  if (!prize || prize.isClaimed) {
     return res.json({ success: false, message: 'Приз вже знайдено! Чекайте на оновлення.', markerNumber: scannedMarker });
   }
 
-  if (scannedMarker === prizeMarker) {
-    const found = prizeMarker;
-    prizeMarker = -1; // Приз забрали
-    // console.log(`Приз знайдено: ${found} о ${new Date().toISOString()}`);
-    const claimTime = new Date().toLocaleString('uk-UA');
-    console.log(`[${claimTime}] ПРИЗ ЗАБРАЛИ! Маркер №${found} тепер порожній.`);
-    return res.json({ success: true, message: 'Вітаємо! Ви знайшли приз!', markerNumber: found });
+  if (scannedMarker === prize.prizeMarker) {
+    await game().updateOne({ _id: 'prize' }, { $set: { isClaimed: true } });
+    console.log(`[${new Date().toLocaleString('uk-UA')}] ПРИЗ ЗАБРАЛИ! Маркер №${prize.prizeMarker} тепер порожній.`);
+    return res.json({ success: true, message: 'Вітаємо! Ви знайшли приз!', markerNumber: prize.prizeMarker });
   }
 
   return res.json({ success: false, message: 'Тут пусто. Шукайте далі!', markerNumber: scannedMarker });
 });
 
-
-
-// 5. Обнуление приза (бот: "приз знайдено")
-app.post('/bot/claim-prize', (req, res) => {
-    if (prizeMarker === -1) {
-        return res.json({ success: false, message: 'Приз вже було забрано.' });
-    }
-    const claimed = prizeMarker;
-    prizeMarker = -1;
-    const claimTime = new Date().toLocaleString('uk-UA');
-    console.log(`[${claimTime}] Бот обнулив приз. Маркер №${claimed}.`);
-    res.json({ success: true, message: `Приз (маркер №${claimed}) обнулено.`, claimedMarker: claimed });
+app.post('/bot/claim-prize', async (req, res) => {
+  const prize = await getPrize();
+  if (!prize || prize.isClaimed) {
+    return res.json({ success: false, message: 'Приз вже було забрано.' });
+  }
+  await game().updateOne({ _id: 'prize' }, { $set: { isClaimed: true } });
+  console.log(`[${new Date().toLocaleString('uk-UA')}] Бот обнулив приз. Маркер №${prize.prizeMarker}.`);
+  res.json({ success: true, message: `Приз (маркер №${prize.prizeMarker}) обнулено.`, claimedMarker: prize.prizeMarker });
 });
 
-// 1. Клиент запрашивает актуальный маршрут
-app.get('/api/open-house-route', (req, res) => {
-    res.json({ success: true, route: currentOpenHouseRoute });
+app.get('/api/open-house-route', async (req, res) => {
+  const route = await getRoute();
+  res.json({ success: true, route });
 });
 
-// 2. Бот задает конкретный маршрут
-app.post('/bot/set-route', (req, res) => {
-    const { route } = req.body;
-    
-    // Проверяем валидность: это массив и первый элемент всегда 12
-    if (!Array.isArray(route) || route[0] !== 12) {
-        return res.status(400).json({ success: false, message: 'Маршрут має бути масивом і починатися з 12.' });
-    }
-    
-    currentOpenHouseRoute = route;
-    console.log(`Бот встановив новий маршрут: ${currentOpenHouseRoute}`);
-    res.json({ success: true, route: currentOpenHouseRoute });
+app.post('/bot/set-route', async (req, res) => {
+  const { route } = req.body;
+  if (!Array.isArray(route) || route[0] !== 12) {
+    return res.status(400).json({ success: false, message: 'Маршрут має бути масивом і починатися з 12.' });
+  }
+  await setRoute(route);
+  console.log(`Бот встановив новий маршрут: ${route}`);
+  res.json({ success: true, route });
 });
 
-// 3. Бот запрашивает генерацию рандомного маршрута
-app.post('/bot/random-route', (req, res) => {
-    const steps = req.body.steps || 5; // Количество шагов по умолчанию
-    
-    // Перемешиваем пул маркеров и берем нужное количество
-    const shuffled = openHousePool.sort(() => 0.5 - Math.random());
-    const randomPath = shuffled.slice(0, steps - 1);
-    
-    // Всегда начинаем с 12
-    currentOpenHouseRoute = [12, ...randomPath];
-    
-    console.log(`Бот згенерував випадковий маршрут: ${currentOpenHouseRoute}`);
-    res.json({ success: true, route: currentOpenHouseRoute });
+app.post('/bot/random-route', async (req, res) => {
+  const steps = req.body.steps || 5;
+  const shuffled = [...openHousePool].sort(() => 0.5 - Math.random());
+  const route = [12, ...shuffled.slice(0, steps - 1)];
+  await setRoute(route);
+  console.log(`Бот згенерував випадковий маршрут: ${route}`);
+  res.json({ success: true, route });
 });
 
 // --- ЛОКАЦІЇ API ---
 
-app.get('/api/locations', (req, res) => {
-    res.json({ success: true, locations });
+app.get('/api/locations', async (req, res) => {
+  const locations = await getLocations();
+  res.json({ success: true, locations });
 });
 
-app.post('/api/locations', (req, res) => {
-    const { markerId, name } = req.body;
-    const id = Number(markerId);
-    if (isNaN(id) || !name || typeof name !== 'string') {
-        return res.status(400).json({ success: false, message: 'Потрібні markerId (число) та name (текст).' });
-    }
-    locations[id] = name.trim();
-    console.log(`Локацію оновлено: маркер ${id} → "${locations[id]}"`);
-    res.json({ success: true, markerId: id, name: locations[id] });
+app.post('/api/locations', async (req, res) => {
+  const { markerId, name } = req.body;
+  const id = Number(markerId);
+  if (isNaN(id) || !name || typeof name !== 'string') {
+    return res.status(400).json({ success: false, message: 'Потрібні markerId (число) та name (текст).' });
+  }
+  const trimmed = name.trim();
+  await locs().updateOne(
+    { markerId: id },
+    { $set: { markerId: id, name: trimmed } },
+    { upsert: true }
+  );
+  console.log(`Локацію оновлено: маркер ${id} → "${trimmed}"`);
+  res.json({ success: true, markerId: id, name: trimmed });
 });
 
-app.delete('/api/locations/:id', (req, res) => {
-    const id = Number(req.params.id);
-    if (!(id in locations)) {
-        return res.status(404).json({ success: false, message: 'Локацію не знайдено.' });
-    }
-    const name = locations[id];
-    delete locations[id];
-    console.log(`Локацію видалено: маркер ${id} ("${name}")`);
-    res.json({ success: true, message: `Локацію "${name}" (маркер ${id}) видалено.` });
+app.delete('/api/locations/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const result = await locs().findOneAndDelete({ markerId: id });
+  if (!result) {
+    return res.status(404).json({ success: false, message: 'Локацію не знайдено.' });
+  }
+  console.log(`Локацію видалено: маркер ${id} ("${result.name}")`);
+  res.json({ success: true, message: `Локацію "${result.name}" (маркер ${id}) видалено.` });
 });
 
 app.use(express.static(path.join(__dirname)));
 
-// Главная страница
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index2.html'));
+  res.sendFile(path.join(__dirname, 'index2.html'));
 });
 
-app.listen(port, async () => {
+// --- STARTUP ---
+async function start() {
+  const mongoUri = process.env.MONGODB_URI;
+  if (mongoUri) {
+    const client = new MongoClient(mongoUri);
+    await client.connect();
+    db = client.db('game-vr-bot');
+    await seedDefaults();
+    console.log('MongoDB connected.');
+  } else {
+    console.error('MONGODB_URI not set!');
+  }
+
+  app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
     try {
-        const initBot = require('./telegram-bot/src/index');
-        await initBot(app);
+      const initBot = require('./telegram-bot/src/index');
+      await initBot(app, db);
     } catch (err) {
-        console.error('Telegram bot init failed:', err.message);
+      console.error('Telegram bot init failed:', err.message);
     }
-});
+  });
 
+  // Auto-reset prize every 7 days
+  setInterval(async () => {
+    const prize = await getPrize();
+    if (!prize?.lastResetDate) return;
+    const days = Math.floor((Date.now() - new Date(prize.lastResetDate)) / 86400000);
+    if (days >= 7) await generateNewPrizeMarker();
+  }, 3600000);
+}
+
+start().catch(err => {
+  console.error('Startup failed:', err);
+  process.exit(1);
+});

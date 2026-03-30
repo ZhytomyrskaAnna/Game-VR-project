@@ -3,12 +3,11 @@ const AdminStore = require('./services/AdminStore');
 const GameApi = require('./services/GameApi');
 const Bot = require('./Bot');
 
-async function initBot(app) {
+async function initBot(app, db) {
   const {
     BOT_TOKEN,
     SERVER_URL,
     OWNER_CHAT_ID,
-    MONGODB_URI,
   } = process.env;
 
   if (!BOT_TOKEN) {
@@ -16,12 +15,8 @@ async function initBot(app) {
     return;
   }
 
-  const adminStore = new AdminStore({
-    mongoUrl: MONGODB_URI,
-    ownerChatId: OWNER_CHAT_ID,
-  });
-  await adminStore.connect();
-  console.log('MongoDB connected.');
+  const adminStore = new AdminStore({ db, ownerChatId: OWNER_CHAT_ID });
+  await adminStore.init();
 
   const telegramBot = new TelegramBot(BOT_TOKEN);
   const port = process.env.PORT || 3000;
