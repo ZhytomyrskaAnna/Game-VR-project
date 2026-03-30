@@ -51,7 +51,7 @@ function generateNewPrizeMarker() {
   const randomIndex = Math.floor(Math.random() * huntMarkers.length);
   prizeMarker = huntMarkers[randomIndex];
   lastResetDate = new Date();
-  console.log(`Новий приз згенеровано: ${prizeMarker} о ${lastResetDate.toISOString()}`);
+  console.log(`Новий приз згенеровано: ${prizeMarker} о ${lastResetDate.toLocaleString('uk-UA')}`);
 }
 
 if (prizeMarker === -1) generateNewPrizeMarker();
@@ -80,7 +80,7 @@ app.get('/admin/status', (req, res) => {
   res.json({ 
       success: true, 
       prizeMarker, 
-      lastResetDate: lastResetDate ? lastResetDate.toISOString() : null, 
+      lastResetDate: lastResetDate || null, 
       isClaimed: prizeMarker === -1 
   });
 });
