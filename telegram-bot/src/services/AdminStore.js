@@ -1,52 +1,47 @@
-const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
-const { v4: uuidv4 } = require('uuid');
+const { MongoClient } = require('mongodb');
+const crypto = require('crypto');
 
 class AdminStore {
-  constructor({ region, adminsTable, invitesTable, ownerChatId }) {
-    const client = new DynamoDBClient({ region });
-    this.db = DynamoDBDocumentClient.from(client);
-    this.adminsTable = adminsTable;
-    this.invitesTable = invitesTable;
+  constructor({ mongoUrl, dbName = 'game-vr-bot', ownerChatId }) {
+    this.client = new MongoClient(mongoUrl);
+    this.dbName = dbName;
     this.ownerChatId = Number(ownerChatId);
+    this.db = null;
+  }
+
+  async connect() {
+    await this.client.connect();
+    this.db = this.client.db(this.dbName);
+    // TTL index: auto-delete expired invites
+    await this.db.collection('invites').createIndex(
+      { expiresAt: 1 },
+      { expireAfterSeconds: 0 }
+    );
   }
 
   async isAdmin(chatId) {
     if (Number(chatId) === this.ownerChatId) return true;
-    const result = await this.db.send(new GetCommand({
-      TableName: this.adminsTable,
-      Key: { chatId: Number(chatId) },
-    }));
-    return !!result.Item;
+    const admin = await this.db.collection('admins').findOne({ chatId: Number(chatId) });
+    return !!admin;
   }
 
   async addAdmin(chatId, addedBy) {
-    await this.db.send(new PutCommand({
-      TableName: this.adminsTable,
-      Item: {
-        chatId: Number(chatId),
-        addedBy: Number(addedBy),
-        addedAt: new Date().toISOString(),
-      },
-    }));
+    await this.db.collection('admins').updateOne(
+      { chatId: Number(chatId) },
+      { $set: { chatId: Number(chatId), addedBy: Number(addedBy), addedAt: new Date() } },
+      { upsert: true }
+    );
   }
 
   async removeAdmin(chatId) {
     if (Number(chatId) === this.ownerChatId) {
       throw new Error('Не можна видалити власника.');
     }
-    await this.db.send(new DeleteCommand({
-      TableName: this.adminsTable,
-      Key: { chatId: Number(chatId) },
-    }));
+    await this.db.collection('admins').deleteOne({ chatId: Number(chatId) });
   }
 
   async listAdmins() {
-    const result = await this.db.send(new ScanCommand({
-      TableName: this.adminsTable,
-    }));
-    const admins = result.Items || [];
-    // Always include owner
+    const admins = await this.db.collection('admins').find().toArray();
     const ownerExists = admins.some(a => a.chatId === this.ownerChatId);
     if (!ownerExists) {
       admins.unshift({ chatId: this.ownerChatId, addedBy: null, addedAt: null });
@@ -55,34 +50,21 @@ class AdminStore {
   }
 
   async createInvite(createdBy) {
-    const token = uuidv4().slice(0, 8);
-    const ttl = Math.floor(Date.now() / 1000) + 86400; // 24 hours
-    await this.db.send(new PutCommand({
-      TableName: this.invitesTable,
-      Item: {
-        token,
-        createdBy: Number(createdBy),
-        expiresAt: ttl,
-      },
-    }));
+    const token = crypto.randomBytes(8).toString('hex');
+    await this.db.collection('invites').insertOne({
+      token,
+      createdBy: Number(createdBy),
+      expiresAt: new Date(Date.now() + 86400000), // 24 hours
+    });
     return token;
   }
 
   async redeemInvite(token) {
-    try {
-      const result = await this.db.send(new DeleteCommand({
-        TableName: this.invitesTable,
-        Key: { token },
-        ConditionExpression: 'attribute_exists(#t) AND #exp > :now',
-        ExpressionAttributeNames: { '#t': 'token', '#exp': 'expiresAt' },
-        ExpressionAttributeValues: { ':now': Math.floor(Date.now() / 1000) },
-        ReturnValues: 'ALL_OLD',
-      }));
-      return result.Attributes?.createdBy ?? null;
-    } catch (err) {
-      if (err.name === 'ConditionalCheckFailedException') return null;
-      throw err;
-    }
+    const result = await this.db.collection('invites').findOneAndDelete({
+      token,
+      expiresAt: { $gt: new Date() },
+    });
+    return result?.createdBy ?? null;
   }
 }
 

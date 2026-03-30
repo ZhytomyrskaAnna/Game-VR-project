@@ -3,46 +3,46 @@ const AdminStore = require('./services/AdminStore');
 const GameApi = require('./services/GameApi');
 const Bot = require('./Bot');
 
-const {
-  BOT_TOKEN,
-  SERVER_URL,
-  OWNER_CHAT_ID,
-  AWS_REGION = 'eu-central-1',
-  DYNAMODB_ADMINS_TABLE = 'game-vr-bot-admins',
-  DYNAMODB_INVITES_TABLE = 'game-vr-bot-invites',
-} = process.env;
+async function initBot(app) {
+  const {
+    BOT_TOKEN,
+    SERVER_URL,
+    OWNER_CHAT_ID,
+    MONGODB_URI,
+  } = process.env;
 
-const telegramBot = new TelegramBot(BOT_TOKEN);
-const adminStore = new AdminStore({
-  region: AWS_REGION,
-  adminsTable: DYNAMODB_ADMINS_TABLE,
-  invitesTable: DYNAMODB_INVITES_TABLE,
-  ownerChatId: OWNER_CHAT_ID,
-});
-const gameApi = new GameApi(SERVER_URL);
+  if (!BOT_TOKEN) {
+    console.log('BOT_TOKEN not set, Telegram bot disabled.');
+    return;
+  }
 
-let botApp;
+  const adminStore = new AdminStore({
+    mongoUrl: MONGODB_URI,
+    ownerChatId: OWNER_CHAT_ID,
+  });
+  await adminStore.connect();
+  console.log('MongoDB connected.');
 
-async function getBotApp() {
-  if (botApp) return botApp;
+  const telegramBot = new TelegramBot(BOT_TOKEN);
+  const gameApi = new GameApi(SERVER_URL);
+
   const me = await telegramBot.getMe();
-  botApp = new Bot(telegramBot, {
+  new Bot(telegramBot, {
     gameApi,
     adminStore,
     botUsername: me.username,
   });
-  return botApp;
+
+  // Webhook route
+  app.post(`/webhook/${BOT_TOKEN}`, (req, res) => {
+    telegramBot.processUpdate(req.body);
+    res.sendStatus(200);
+  });
+
+  // Set webhook
+  const webhookUrl = `${SERVER_URL}/webhook/${BOT_TOKEN}`;
+  await telegramBot.setWebHook(webhookUrl);
+  console.log(`Telegram bot @${me.username} webhook set: ${webhookUrl}`);
 }
 
-// AWS Lambda handler (webhook mode)
-exports.handler = async (event) => {
-  try {
-    await getBotApp();
-    const body = JSON.parse(event.body);
-    await telegramBot.processUpdate(body);
-    return { statusCode: 200, body: 'OK' };
-  } catch (err) {
-    console.error('Lambda error:', err);
-    return { statusCode: 200, body: 'OK' }; // Always 200 to prevent Telegram retries
-  }
-};
+module.exports = initBot;

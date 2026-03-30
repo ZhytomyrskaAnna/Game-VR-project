@@ -198,5 +198,13 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index2.html'));
 });
 
-app.listen(port, () => console.log(`Server running on port ${port}`));
+app.listen(port, async () => {
+    console.log(`Server running on port ${port}`);
+    try {
+        const initBot = require('./telegram-bot/src/index');
+        await initBot(app);
+    } catch (err) {
+        console.error('Telegram bot init failed:', err.message);
+    }
+});
 

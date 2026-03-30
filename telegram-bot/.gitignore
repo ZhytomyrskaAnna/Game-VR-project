@@ -1,12 +1,5 @@
-# Dependencies
-node_modules/
-
 # Environment
 .env
-
-# AWS
-*.zip
-.aws-sam/
 
 # IDEs
 .idea/
