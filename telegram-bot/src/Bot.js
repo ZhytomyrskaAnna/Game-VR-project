@@ -41,13 +41,11 @@ class Bot {
         await this.bot.sendMessage(chatId, 'У вас немає доступу. Попросіть адміна надіслати запрошення.');
         return;
       }
-      // Update owner profile on first /start
-      if (chatId === this.adminStore.ownerChatId) {
-        await this.adminStore.addAdmin(chatId, chatId, {
-          firstName: msg.from.first_name,
-          username: msg.from.username,
-        });
-      }
+      // Update admin profile (name/username) on each /start
+      await this.adminStore.addAdmin(chatId, chatId, {
+        firstName: msg.from.first_name,
+        username: msg.from.username,
+      });
       await this._sendMenu(chatId);
       return;
     }
