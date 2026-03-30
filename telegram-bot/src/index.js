@@ -24,7 +24,8 @@ async function initBot(app) {
   console.log('MongoDB connected.');
 
   const telegramBot = new TelegramBot(BOT_TOKEN);
-  const gameApi = new GameApi(SERVER_URL);
+  const port = process.env.PORT || 3000;
+  const gameApi = new GameApi(`http://localhost:${port}`);
 
   const me = await telegramBot.getMe();
   new Bot(telegramBot, {
