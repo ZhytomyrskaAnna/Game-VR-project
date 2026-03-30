@@ -26,13 +26,13 @@ class AdminStore {
     return result;
   }
 
-  async addAdmin(chatId, addedBy) {
+  async addAdmin(chatId, addedBy, { firstName, username } = {}) {
     const id = Number(chatId);
     const by = Number(addedBy);
     this._cache.delete(id);
     await this.db.collection('admins').updateOne(
       { chatId: id },
-      { $set: { chatId: id, addedBy: by, addedAt: new Date() } },
+      { $set: { chatId: id, addedBy: by, addedAt: new Date(), firstName: firstName || null, username: username || null } },
       { upsert: true }
     );
   }

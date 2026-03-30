@@ -4,6 +4,12 @@ class AdminHandler {
     this.botUsername = botUsername;
   }
 
+  _displayName(admin) {
+    if (admin.username) return `@${admin.username}`;
+    if (admin.firstName) return admin.firstName;
+    return `ID ${admin.chatId}`;
+  }
+
   async invite(bot, chatId) {
     const token = await this.adminStore.createInvite(chatId);
     const link = `https://t.me/${this.botUsername}?start=inv_${token}`;
@@ -12,7 +18,7 @@ class AdminHandler {
     );
   }
 
-  async handleInviteLink(bot, chatId, token, firstName) {
+  async handleInviteLink(bot, chatId, token, from) {
     const alreadyAdmin = await this.adminStore.isAdmin(chatId);
     if (alreadyAdmin) {
       await bot.sendMessage(chatId, 'Ви вже адмін.');
@@ -25,8 +31,11 @@ class AdminHandler {
       return false;
     }
 
-    await this.adminStore.addAdmin(chatId, invitedBy);
-    await bot.sendMessage(chatId, `${firstName}, вас додано як адміна!`);
+    await this.adminStore.addAdmin(chatId, invitedBy, {
+      firstName: from.first_name,
+      username: from.username,
+    });
+    await bot.sendMessage(chatId, `${from.first_name}, вас додано як адміна!`);
     return true;
   }
 
@@ -42,12 +51,13 @@ class AdminHandler {
 
     for (const admin of admins) {
       const isOwner = admin.chatId === this.adminStore.ownerChatId;
-      const label = isOwner ? `${admin.chatId} (власник)` : `${admin.chatId}`;
+      const name = this._displayName(admin);
+      const label = isOwner ? `${name} (власник)` : name;
       text += `- ${label}\n`;
 
       if (!isOwner) {
         buttons.push([{
-          text: `Видалити ${admin.chatId}`,
+          text: `Видалити ${name}`,
           callback_data: `admin_remove_${admin.chatId}`,
         }]);
       }
@@ -63,7 +73,7 @@ class AdminHandler {
   async remove(bot, chatId, targetChatId) {
     try {
       await this.adminStore.removeAdmin(targetChatId);
-      await bot.sendMessage(chatId, `Адміна ${targetChatId} видалено.`);
+      await bot.sendMessage(chatId, `Адміна видалено.`);
     } catch (err) {
       await bot.sendMessage(chatId, err.message);
     }
