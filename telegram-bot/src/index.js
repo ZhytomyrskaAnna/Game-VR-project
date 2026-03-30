@@ -40,7 +40,8 @@ async function initBot(app) {
   });
 
   // Set webhook
-  const webhookUrl = `${SERVER_URL}/webhook/${BOT_TOKEN}`;
+  const baseUrl = SERVER_URL.replace(/\/+$/, '');
+  const webhookUrl = `${baseUrl}/webhook/${BOT_TOKEN}`;
   await telegramBot.setWebHook(webhookUrl);
   console.log(`Telegram bot @${me.username} webhook set: ${webhookUrl}`);
 }
