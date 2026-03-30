@@ -26,9 +26,15 @@ let db;
 // --- HELPERS ---
 const game = () => db.collection('game');
 const locs = () => db.collection('locations');
+const timestamp = () => new Date().toLocaleString('uk-UA');
+const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
 async function getPrize() {
-  return await game().findOne({ _id: 'prize' });
+  return game().findOne({ _id: 'prize' });
+}
+
+async function claimPrize() {
+  return game().updateOne({ _id: 'prize' }, { $set: { isClaimed: true } });
 }
 
 async function generateNewPrizeMarker() {
@@ -40,7 +46,7 @@ async function generateNewPrizeMarker() {
     { $set: { prizeMarker: marker, lastResetDate: now, isClaimed: false } },
     { upsert: true }
   );
-  console.log(`Новий приз згенеровано: ${marker} о ${now.toLocaleString('uk-UA')}`);
+  console.log(`Новий приз згенеровано: ${marker} о ${timestamp()}`);
   return marker;
 }
 
@@ -91,7 +97,7 @@ app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
-app.get('/admin/status', async (req, res) => {
+app.get('/admin/status', asyncHandler(async (req, res) => {
   const prize = await getPrize();
   res.json({
     success: true,
@@ -99,14 +105,14 @@ app.get('/admin/status', async (req, res) => {
     lastResetDate: prize?.lastResetDate || null,
     isClaimed: prize?.isClaimed ?? true
   });
-});
+}));
 
-app.post('/admin/reset-prize', async (req, res) => {
+app.post('/admin/reset-prize', asyncHandler(async (req, res) => {
   const marker = await generateNewPrizeMarker();
   res.json({ success: true, message: 'Новий приз згенеровано!', prizeMarker: marker });
-});
+}));
 
-app.post('/check-marker', async (req, res) => {
+app.post('/check-marker', asyncHandler(async (req, res) => {
   const scannedMarker = Number.parseInt(req.body.marker, 10);
   if (Number.isNaN(scannedMarker)) {
     return res.status(400).json({ success: false, message: 'Невірний формат даних.' });
@@ -118,30 +124,30 @@ app.post('/check-marker', async (req, res) => {
   }
 
   if (scannedMarker === prize.prizeMarker) {
-    await game().updateOne({ _id: 'prize' }, { $set: { isClaimed: true } });
-    console.log(`[${new Date().toLocaleString('uk-UA')}] ПРИЗ ЗАБРАЛИ! Маркер №${prize.prizeMarker} тепер порожній.`);
+    await claimPrize();
+    console.log(`[${timestamp()}] ПРИЗ ЗАБРАЛИ! Маркер №${prize.prizeMarker} тепер порожній.`);
     return res.json({ success: true, message: 'Вітаємо! Ви знайшли приз!', markerNumber: prize.prizeMarker });
   }
 
   return res.json({ success: false, message: 'Тут пусто. Шукайте далі!', markerNumber: scannedMarker });
-});
+}));
 
-app.post('/bot/claim-prize', async (req, res) => {
+app.post('/bot/claim-prize', asyncHandler(async (req, res) => {
   const prize = await getPrize();
   if (!prize || prize.isClaimed) {
     return res.json({ success: false, message: 'Приз вже було забрано.' });
   }
-  await game().updateOne({ _id: 'prize' }, { $set: { isClaimed: true } });
-  console.log(`[${new Date().toLocaleString('uk-UA')}] Бот обнулив приз. Маркер №${prize.prizeMarker}.`);
+  await claimPrize();
+  console.log(`[${timestamp()}] Бот обнулив приз. Маркер №${prize.prizeMarker}.`);
   res.json({ success: true, message: `Приз (маркер №${prize.prizeMarker}) обнулено.`, claimedMarker: prize.prizeMarker });
-});
+}));
 
-app.get('/api/open-house-route', async (req, res) => {
+app.get('/api/open-house-route', asyncHandler(async (req, res) => {
   const route = await getRoute();
   res.json({ success: true, route });
-});
+}));
 
-app.post('/bot/set-route', async (req, res) => {
+app.post('/bot/set-route', asyncHandler(async (req, res) => {
   const { route } = req.body;
   if (!Array.isArray(route) || route[0] !== 12) {
     return res.status(400).json({ success: false, message: 'Маршрут має бути масивом і починатися з 12.' });
@@ -149,25 +155,25 @@ app.post('/bot/set-route', async (req, res) => {
   await setRoute(route);
   console.log(`Бот встановив новий маршрут: ${route}`);
   res.json({ success: true, route });
-});
+}));
 
-app.post('/bot/random-route', async (req, res) => {
+app.post('/bot/random-route', asyncHandler(async (req, res) => {
   const steps = req.body.steps || 5;
   const shuffled = [...openHousePool].sort(() => 0.5 - Math.random());
   const route = [12, ...shuffled.slice(0, steps - 1)];
   await setRoute(route);
   console.log(`Бот згенерував випадковий маршрут: ${route}`);
   res.json({ success: true, route });
-});
+}));
 
 // --- ЛОКАЦІЇ API ---
 
-app.get('/api/locations', async (req, res) => {
+app.get('/api/locations', asyncHandler(async (req, res) => {
   const locations = await getLocations();
   res.json({ success: true, locations });
-});
+}));
 
-app.post('/api/locations', async (req, res) => {
+app.post('/api/locations', asyncHandler(async (req, res) => {
   const { markerId, name } = req.body;
   const id = Number(markerId);
   if (isNaN(id) || !name || typeof name !== 'string') {
@@ -181,9 +187,9 @@ app.post('/api/locations', async (req, res) => {
   );
   console.log(`Локацію оновлено: маркер ${id} → "${trimmed}"`);
   res.json({ success: true, markerId: id, name: trimmed });
-});
+}));
 
-app.delete('/api/locations/:id', async (req, res) => {
+app.delete('/api/locations/:id', asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
   const result = await locs().findOneAndDelete({ markerId: id });
   if (!result) {
@@ -191,7 +197,7 @@ app.delete('/api/locations/:id', async (req, res) => {
   }
   console.log(`Локацію видалено: маркер ${id} ("${result.name}")`);
   res.json({ success: true, message: `Локацію "${result.name}" (маркер ${id}) видалено.` });
-});
+}));
 
 app.use(express.static(path.join(__dirname)));
 
@@ -224,10 +230,14 @@ async function start() {
 
   // Auto-reset prize every 7 days
   setInterval(async () => {
-    const prize = await getPrize();
-    if (!prize?.lastResetDate) return;
-    const days = Math.floor((Date.now() - new Date(prize.lastResetDate)) / 86400000);
-    if (days >= 7) await generateNewPrizeMarker();
+    try {
+      const prize = await getPrize();
+      if (!prize?.lastResetDate) return;
+      const days = Math.floor((Date.now() - new Date(prize.lastResetDate)) / 86400000);
+      if (days >= 7) await generateNewPrizeMarker();
+    } catch (err) {
+      console.error('Prize auto-reset failed:', err.message);
+    }
   }, 3600000);
 }
 

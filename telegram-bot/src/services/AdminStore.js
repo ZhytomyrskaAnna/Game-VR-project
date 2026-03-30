@@ -4,6 +4,8 @@ class AdminStore {
   constructor({ db, ownerChatId }) {
     this.db = db;
     this.ownerChatId = Number(ownerChatId);
+    this._cache = new Map();
+    this._ttl = 60000; // 60s cache
   }
 
   async init() {
@@ -14,12 +16,18 @@ class AdminStore {
   }
 
   async isAdmin(chatId) {
-    if (Number(chatId) === this.ownerChatId) return true;
-    const admin = await this.db.collection('admins').findOne({ chatId: Number(chatId) });
-    return !!admin;
+    const id = Number(chatId);
+    if (id === this.ownerChatId) return true;
+    const cached = this._cache.get(id);
+    if (cached && cached.exp > Date.now()) return cached.val;
+    const admin = await this.db.collection('admins').findOne({ chatId: id });
+    const result = !!admin;
+    this._cache.set(id, { val: result, exp: Date.now() + this._ttl });
+    return result;
   }
 
   async addAdmin(chatId, addedBy) {
+    this._cache.delete(Number(chatId));
     await this.db.collection('admins').updateOne(
       { chatId: Number(chatId) },
       { $set: { chatId: Number(chatId), addedBy: Number(addedBy), addedAt: new Date() } },
@@ -28,6 +36,7 @@ class AdminStore {
   }
 
   async removeAdmin(chatId) {
+    this._cache.delete(Number(chatId));
     if (Number(chatId) === this.ownerChatId) {
       throw new Error('Не можна видалити власника.');
     }
