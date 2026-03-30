@@ -14,6 +14,14 @@ const markerGroups = {
 let prizeMarker = -1;
 let lastResetDate = null;
 
+// Изначальный маршрут для Дня открытых дверей (можно изменить через админку или ботом)
+let currentOpenHouseRoute = [12, 28, 30, 13];
+// Массив всех возможных маркеров для Дня открытых дверей (исключая 12)
+const openHousePool = [13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+
+
+
+
 // --- ЛОГИКА ИГРЫ ---
 function generateNewPrizeMarker() {
   const huntMarkers = markerGroups.prizeHunt;
@@ -85,6 +93,41 @@ app.post('/check-marker', (req, res) => {
 });
 
 
+
+// 1. Клиент запрашивает актуальный маршрут
+app.get('/api/open-house-route', (req, res) => {
+    res.json({ success: true, route: currentOpenHouseRoute });
+});
+
+// 2. Бот задает конкретный маршрут
+app.post('/bot/set-route', (req, res) => {
+    const { route } = req.body;
+    
+    // Проверяем валидность: это массив и первый элемент всегда 12
+    if (!Array.isArray(route) || route[0] !== 12) {
+        return res.status(400).json({ success: false, message: 'Маршрут має бути масивом і починатися з 12.' });
+    }
+    
+    currentOpenHouseRoute = route;
+    console.log(`Бот встановив новий маршрут: ${currentOpenHouseRoute}`);
+    res.json({ success: true, route: currentOpenHouseRoute });
+});
+
+// 3. Бот запрашивает генерацию рандомного маршрута
+app.post('/bot/random-route', (req, res) => {
+    const steps = req.body.steps || 5; // Количество шагов по умолчанию
+    
+    // Перемешиваем пул маркеров и берем нужное количество
+    const shuffled = openHousePool.sort(() => 0.5 - Math.random());
+    const randomPath = shuffled.slice(0, steps - 1);
+    
+    // Всегда начинаем с 12
+    currentOpenHouseRoute = [12, ...randomPath];
+    
+    console.log(`Бот згенерував випадковий маршрут: ${currentOpenHouseRoute}`);
+    res.json({ success: true, route: currentOpenHouseRoute });
+});
+
 app.use(express.static(path.join(__dirname)));
 
 // Главная страница
@@ -93,3 +136,4 @@ app.get('/', (req, res) => {
 });
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
+

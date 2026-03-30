@@ -4,7 +4,8 @@ let statusDisplay = document.getElementById("status-display");
 // Логика сценария для дня открытых дверей и командной игры
 // let openHouseRoute = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]; // Всего маркеров для открытого дня - 19 (12-30)
 let startOpenHouse = false; // Флаг, начали ли маршрут открытого дня
-let openHouseRoute = [12, 28, 30, 13]; // Всего маркеров для открытого дня - 12 (12-23)
+// let openHouseRoute = [12, 28, 30, 13]; // Всего маркеров для открытого дня - 12 (12-23)
+let openHouseRoute = [];
 let openHouseSteps = 5; // Количество этапов для открытого дня
 const openHouseHints = {
     12: "Старт",
@@ -47,6 +48,20 @@ const groupSecondGameHints = {
 // URL твоего сервера
 const SERVER_URL = 'https://game-vr-project.onrender.com';
 
+async function fetchOpenHouseRoute() {
+    try {
+        const response = await fetch(`${SERVER_URL}/api/open-house-route`);
+        const data = await response.json();
+        if (data.success) {
+            openHouseRoute = data.route;
+            console.log('Отримано актуальний маршрут від сервера:', openHouseRoute);
+        }
+    } catch (error) {
+        console.error('Помилка завантаження маршруту відкритого дня:', error);
+        // Резервный маршрут на случай падения сервера
+        openHouseRoute = [12, 28, 30, 13]; 
+    }
+}
 AFRAME.registerComponent('look-at-camera', {
     tick: function () {
         let el = this.el;
@@ -250,6 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const startTs = Date.now();
         updateStopwatch(startTs);
         globalThis._prizeHudTimerInterval = setInterval(() => updateStopwatch(startTs), 1000);
+        fetchOpenHouseRoute();
     }
 });
 /*date and time css */
