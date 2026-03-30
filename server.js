@@ -22,6 +22,7 @@ const DEFAULT_LOCATIONS = {
 };
 
 let db;
+let notifyAdmins = async () => {}; // set by initBot
 
 // --- HELPERS ---
 const game = () => db.collection('game');
@@ -130,7 +131,10 @@ app.post('/check-marker', asyncHandler(async (req, res) => {
   if (scannedMarker === prize.prizeMarker) {
     const claimed = await claimPrize();
     if (!claimed) return res.json({ success: false, message: 'Приз вже знайдено! Чекайте на оновлення.', markerNumber: scannedMarker });
+    const locations = await getLocations();
+    const locName = locations[prize.prizeMarker] || `Маркер ${prize.prizeMarker}`;
     console.log(`[${timestamp()}] ПРИЗ ЗАБРАЛИ! Маркер №${prize.prizeMarker} тепер порожній.`);
+    notifyAdmins(`🏆 <b>Приз знайдено!</b>\n\nМаркер: №${prize.prizeMarker}\nЛокація: ${locName}\nЧас: ${timestamp()}`);
     return res.json({ success: true, message: 'Вітаємо! Ви знайшли приз!', markerNumber: prize.prizeMarker });
   }
 
@@ -231,7 +235,8 @@ async function start() {
     console.log(`Server running on port ${port}`);
     try {
       const initBot = require('./telegram-bot/src/index');
-      await initBot(app, db);
+      const notify = await initBot(app, db);
+      if (notify) notifyAdmins = notify;
     } catch (err) {
       console.error('Telegram bot init failed:', err.message);
     }

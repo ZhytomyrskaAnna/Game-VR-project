@@ -40,6 +40,18 @@ async function initBot(app, db) {
   const webhookUrl = `${baseUrl}/webhook/${BOT_TOKEN}`;
   await telegramBot.setWebHook(webhookUrl);
   console.log(`Telegram bot @${me.username} webhook set: ${webhookUrl}`);
+
+  // Return notify function for server to use
+  return async function notifyAdmins(message) {
+    try {
+      const admins = await adminStore.listAdmins();
+      await Promise.allSettled(
+        admins.map(a => telegramBot.sendMessage(a.chatId, message, { parse_mode: 'HTML' }))
+      );
+    } catch (err) {
+      console.error('Notify admins failed:', err.message);
+    }
+  };
 }
 
 module.exports = initBot;
