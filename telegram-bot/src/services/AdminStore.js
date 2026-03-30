@@ -27,20 +27,23 @@ class AdminStore {
   }
 
   async addAdmin(chatId, addedBy) {
-    this._cache.delete(Number(chatId));
+    const id = Number(chatId);
+    const by = Number(addedBy);
+    this._cache.delete(id);
     await this.db.collection('admins').updateOne(
-      { chatId: Number(chatId) },
-      { $set: { chatId: Number(chatId), addedBy: Number(addedBy), addedAt: new Date() } },
+      { chatId: id },
+      { $set: { chatId: id, addedBy: by, addedAt: new Date() } },
       { upsert: true }
     );
   }
 
   async removeAdmin(chatId) {
-    this._cache.delete(Number(chatId));
-    if (Number(chatId) === this.ownerChatId) {
+    const id = Number(chatId);
+    if (id === this.ownerChatId) {
       throw new Error('Не можна видалити власника.');
     }
-    await this.db.collection('admins').deleteOne({ chatId: Number(chatId) });
+    this._cache.delete(id);
+    await this.db.collection('admins').deleteOne({ chatId: id });
   }
 
   async listAdmins() {

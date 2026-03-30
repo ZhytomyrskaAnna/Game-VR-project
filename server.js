@@ -34,7 +34,11 @@ async function getPrize() {
 }
 
 async function claimPrize() {
-  return game().updateOne({ _id: 'prize' }, { $set: { isClaimed: true } });
+  const result = await game().updateOne(
+    { _id: 'prize', isClaimed: false },
+    { $set: { isClaimed: true } }
+  );
+  return result.modifiedCount > 0;
 }
 
 async function generateNewPrizeMarker() {
@@ -124,7 +128,8 @@ app.post('/check-marker', asyncHandler(async (req, res) => {
   }
 
   if (scannedMarker === prize.prizeMarker) {
-    await claimPrize();
+    const claimed = await claimPrize();
+    if (!claimed) return res.json({ success: false, message: 'Приз вже знайдено! Чекайте на оновлення.', markerNumber: scannedMarker });
     console.log(`[${timestamp()}] ПРИЗ ЗАБРАЛИ! Маркер №${prize.prizeMarker} тепер порожній.`);
     return res.json({ success: true, message: 'Вітаємо! Ви знайшли приз!', markerNumber: prize.prizeMarker });
   }
@@ -134,10 +139,10 @@ app.post('/check-marker', asyncHandler(async (req, res) => {
 
 app.post('/bot/claim-prize', asyncHandler(async (req, res) => {
   const prize = await getPrize();
-  if (!prize || prize.isClaimed) {
+  const claimed = prize && await claimPrize();
+  if (!claimed) {
     return res.json({ success: false, message: 'Приз вже було забрано.' });
   }
-  await claimPrize();
   console.log(`[${timestamp()}] Бот обнулив приз. Маркер №${prize.prizeMarker}.`);
   res.json({ success: true, message: `Приз (маркер №${prize.prizeMarker}) обнулено.`, claimedMarker: prize.prizeMarker });
 }));
@@ -159,7 +164,11 @@ app.post('/bot/set-route', asyncHandler(async (req, res) => {
 
 app.post('/bot/random-route', asyncHandler(async (req, res) => {
   const steps = req.body.steps || 5;
-  const shuffled = [...openHousePool].sort(() => 0.5 - Math.random());
+  const shuffled = [...openHousePool];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   const route = [12, ...shuffled.slice(0, steps - 1)];
   await setRoute(route);
   console.log(`Бот згенерував випадковий маршрут: ${route}`);
