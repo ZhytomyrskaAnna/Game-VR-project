@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const crypto = require('crypto');
 const { MongoClient } = require('mongodb');
 
 const app = express();
@@ -76,7 +77,6 @@ async function getLocations() {
 }
 
 async function seedDefaults() {
-  // Seed locations if empty
   const count = await locs().countDocuments();
   if (count === 0) {
     const docs = Object.entries(DEFAULT_LOCATIONS).map(([id, name]) => ({
@@ -85,6 +85,12 @@ async function seedDefaults() {
     await locs().insertMany(docs);
     console.log('Default locations seeded.');
   }
+  // Ensure marker 12 "Старт" always exists
+  await locs().updateOne(
+    { markerId: 12 },
+    { $setOnInsert: { markerId: 12, name: 'Старт' } },
+    { upsert: true }
+  );
   // Seed prize if not exists
   const prize = await getPrize();
   if (!prize) {
@@ -92,11 +98,79 @@ async function seedDefaults() {
   }
 }
 
+// --- PASSWORD ---
+const hashPassword = (pw) => crypto.createHash('sha256').update(pw).digest('hex');
+let cachedPasswordHash = null;
+
+async function getApiPassword() {
+  if (cachedPasswordHash) return cachedPasswordHash;
+  const doc = await game().findOne({ _id: 'settings' });
+  cachedPasswordHash = doc?.apiPasswordHash || null;
+  return cachedPasswordHash;
+}
+
+async function setApiPassword(password) {
+  const hash = hashPassword(password);
+  await game().updateOne(
+    { _id: 'settings' },
+    { $set: { apiPasswordHash: hash } },
+    { upsert: true }
+  );
+  cachedPasswordHash = hash;
+}
+
+async function seedPassword() {
+  const existing = await getApiPassword();
+  if (!existing && process.env.API_PASSWORD) {
+    await setApiPassword(process.env.API_PASSWORD);
+    console.log('API password seeded from env.');
+  }
+}
+
+const PUBLIC_PATHS = new Set(['/', '/check-marker', '/api/open-house-route']);
+const LOCAL_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1']);
+
+async function authMiddleware(req, res, next) {
+  if (PUBLIC_PATHS.has(req.path)) return next();
+  if (req.path.startsWith('/webhook/')) return next();
+  if (req.path === '/api/locations' && req.method === 'GET') return next();
+  if (req.path === '/admin' && req.method === 'GET') return next();
+
+  const key = req.headers['x-api-key'];
+  if (key === 'localhost' && LOCAL_IPS.has(req.ip)) return next();
+  if (!key) return res.status(401).json({ success: false, message: 'Потрібен пароль.' });
+
+  try {
+    const hash = await getApiPassword();
+    if (!hash) return res.status(500).json({ success: false, message: 'Пароль не налаштовано.' });
+    if (hashPassword(key) !== hash) return res.status(403).json({ success: false, message: 'Невірний пароль.' });
+    next();
+  } catch {
+    res.status(500).json({ success: false, message: 'Помилка сервера.' });
+  }
+}
+
 // --- НАСТРОЙКИ СЕРВЕРА ---
 app.use(express.json());
 app.use(cors());
+app.use(authMiddleware);
 
 // --- МАРШРУТЫ ---
+
+// Password verification endpoint
+app.post('/admin/login', asyncHandler(async (req, res) => {
+  res.json({ success: true });
+}));
+
+// Change password endpoint (for bot)
+app.post('/admin/change-password', asyncHandler(async (req, res) => {
+  const { newPassword } = req.body;
+  if (!newPassword || newPassword.length < 4) {
+    return res.status(400).json({ success: false, message: 'Пароль має бути мінімум 4 символи.' });
+  }
+  await setApiPassword(newPassword);
+  res.json({ success: true, message: 'Пароль змінено.' });
+}));
 
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(__dirname, 'admin.html'));
@@ -192,6 +266,15 @@ app.post('/api/locations', asyncHandler(async (req, res) => {
   if (isNaN(id) || !name || typeof name !== 'string') {
     return res.status(400).json({ success: false, message: 'Потрібні markerId (число) та name (текст).' });
   }
+  if (id < 12) {
+    return res.status(400).json({ success: false, message: 'Маркери 0-11 зарезервовані для гри з призами.' });
+  }
+  if (id > 30) {
+    return res.status(400).json({ success: false, message: 'Нажаль, ліміт — маркер 30.' });
+  }
+  if (id === 12) {
+    return res.status(400).json({ success: false, message: 'Маркер 12 (Старт) не можна змінювати.' });
+  }
   const trimmed = name.trim();
   await locs().updateOne(
     { markerId: id },
@@ -204,12 +287,35 @@ app.post('/api/locations', asyncHandler(async (req, res) => {
 
 app.delete('/api/locations/:id', asyncHandler(async (req, res) => {
   const id = Number(req.params.id);
+  if (id === 12) {
+    return res.status(400).json({ success: false, message: 'Маркер 12 (Старт) не можна видалити.' });
+  }
   const result = await locs().findOneAndDelete({ markerId: id });
   if (!result) {
     return res.status(404).json({ success: false, message: 'Локацію не знайдено.' });
   }
   console.log(`Локацію видалено: маркер ${id} ("${result.name}")`);
   res.json({ success: true, message: `Локацію "${result.name}" (маркер ${id}) видалено.` });
+}));
+
+// --- АДМІНИ API ---
+
+app.get('/api/admins', asyncHandler(async (req, res) => {
+  const admins = await db.collection('admins').find().toArray();
+  res.json({ success: true, admins });
+}));
+
+app.get('/api/invites', asyncHandler(async (req, res) => {
+  const invites = await db.collection('invites').find({
+    expiresAt: { $gt: new Date() },
+  }).toArray();
+  res.json({ success: true, invites });
+}));
+
+app.delete('/api/invites/:token', asyncHandler(async (req, res) => {
+  const result = await db.collection('invites').findOneAndDelete({ token: req.params.token });
+  if (!result) return res.status(404).json({ success: false, message: 'Не знайдено.' });
+  res.json({ success: true, message: 'Запрошення скасовано.' });
 }));
 
 app.use(express.static(path.join(__dirname)));
@@ -226,6 +332,7 @@ async function start() {
     await client.connect();
     db = client.db('game-vr-bot');
     await seedDefaults();
+    await seedPassword();
     console.log('MongoDB connected.');
   } else {
     console.error('MONGODB_URI not set!');

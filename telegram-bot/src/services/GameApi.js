@@ -1,12 +1,16 @@
 class GameApi {
-  constructor(serverUrl) {
+  constructor(serverUrl, apiPassword) {
     this.serverUrl = serverUrl;
+    this.apiPassword = apiPassword;
   }
 
   async _request(method, path, body = null) {
-    const options = { method };
+    const options = {
+      method,
+      headers: { 'x-api-key': this.apiPassword },
+    };
     if (body) {
-      options.headers = { 'Content-Type': 'application/json' };
+      options.headers['Content-Type'] = 'application/json';
       options.body = JSON.stringify(body);
     }
 
@@ -44,6 +48,10 @@ class GameApi {
 
   async deleteLocation(markerId) {
     return this._request('DELETE', `/api/locations/${markerId}`);
+  }
+
+  async changePassword(newPassword) {
+    return this._request('POST', '/admin/change-password', { newPassword });
   }
 }
 

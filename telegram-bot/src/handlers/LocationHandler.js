@@ -23,10 +23,12 @@ class LocationHandler {
 
     for (const [id, name] of entries) {
       text += `- Маркер ${id}: ${name}\n`;
-      buttons.push([
-        { text: `Редагувати "${name}"`, callback_data: `loc_edit_${id}` },
-        { text: 'X', callback_data: `loc_del_${id}` },
-      ]);
+      if (Number(id) !== 12) {
+        buttons.push([
+          { text: `Редагувати "${name}"`, callback_data: `loc_edit_${id}` },
+          { text: 'X', callback_data: `loc_del_${id}` },
+        ]);
+      }
     }
 
     buttons.push([{ text: 'Додати нову', callback_data: 'loc_add' }]);

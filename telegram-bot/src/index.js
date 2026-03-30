@@ -20,7 +20,7 @@ async function initBot(app, db) {
 
   const telegramBot = new TelegramBot(BOT_TOKEN);
   const port = process.env.PORT || 3000;
-  const gameApi = new GameApi(`http://localhost:${port}`);
+  const gameApi = new GameApi(`http://localhost:${port}`, 'localhost');
 
   const me = await telegramBot.getMe();
   new Bot(telegramBot, {

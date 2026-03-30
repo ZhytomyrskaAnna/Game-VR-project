@@ -29,6 +29,19 @@
 </head>
 <body>
 
+  <!-- Login -->
+  <div class="card" id="loginCard">
+    <h3>Вхід в адмін-панель</h3>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <input id="passwordInput" type="password" placeholder="Пароль">
+      <button id="loginBtn">Увійти</button>
+    </div>
+    <div id="loginError" style="color: red; margin-top: 8px;"></div>
+  </div>
+
+  <!-- Content (hidden until login) -->
+  <div id="adminContent" style="display: none;">
+
   <!-- Prize Section -->
   <div class="card">
     <h3>Приз</h3>
@@ -54,6 +67,15 @@
     </div>
   </div>
 
+  <!-- Admins Section -->
+  <div class="card">
+    <h3>Адміни</h3>
+    <div id="adminsList"></div>
+    <hr>
+    <h3>Активні запрошення</h3>
+    <div id="invitesList"></div>
+  </div>
+
   <!-- Locations Section -->
   <div class="card">
     <h3>Локації</h3>
@@ -67,17 +89,69 @@
     </div>
   </div>
 
+  </div><!-- /adminContent -->
+
   <script>
     // --- STATE ---
     let locations = {};
     let routeDraft = [12];
+    let apiKey = sessionStorage.getItem('apiKey') || '';
 
     // --- HELPERS ---
     async function api(method, path, body) {
-      const opts = { method, headers: { 'Content-Type': 'application/json' } };
+      const opts = {
+        method,
+        headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
+      };
       if (body) opts.body = JSON.stringify(body);
       const res = await fetch(path, opts);
+      if (res.status === 401 || res.status === 403) {
+        sessionStorage.removeItem('apiKey');
+        apiKey = '';
+        document.getElementById('adminContent').style.display = 'none';
+        document.getElementById('loginCard').style.display = '';
+        document.getElementById('loginError').textContent = 'Сесія закінчилась. Увійдіть знову.';
+        throw new Error('Unauthorized');
+      }
       return res.json();
+    }
+
+    // --- LOGIN ---
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const pw = document.getElementById('passwordInput').value;
+      if (!pw) return;
+      apiKey = pw;
+      try {
+        const res = await api('POST', '/admin/login');
+        if (res.success) {
+          sessionStorage.setItem('apiKey', pw);
+          document.getElementById('loginCard').style.display = 'none';
+          document.getElementById('adminContent').style.display = '';
+          loadAll();
+        }
+      } catch (e) {
+        document.getElementById('loginError').textContent = 'Невірний пароль.';
+        apiKey = '';
+      }
+    });
+
+    document.getElementById('passwordInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') document.getElementById('loginBtn').click();
+    });
+
+    // Auto-login if saved
+    if (apiKey) {
+      api('POST', '/admin/login').then(res => {
+        if (res.success) {
+          document.getElementById('loginCard').style.display = 'none';
+          document.getElementById('adminContent').style.display = '';
+          loadAll();
+        }
+      }).catch(() => {});
+    }
+
+    function loadAll() {
+      Promise.all([loadLocations(), loadPrize(), loadAdmins(), loadInvites()]);
     }
 
     function locName(id) {
@@ -229,8 +303,61 @@
       }
     });
 
-    // --- INIT ---
-    Promise.all([loadLocations(), loadPrize()]);
+    // --- ADMINS ---
+    function adminName(a) {
+      if (a.username) return '@' + a.username;
+      if (a.firstName) return a.firstName;
+      return 'ID ' + a.chatId;
+    }
+
+    async function loadAdmins() {
+      const data = await api('GET', '/api/admins');
+      const el = document.getElementById('adminsList');
+      if (!data.success || !data.admins.length) { el.textContent = 'Немає адмінів.'; return; }
+
+      const map = {};
+      data.admins.forEach(a => { map[a.chatId] = a; });
+
+      el.innerHTML = '';
+      data.admins.forEach(a => {
+        const row = document.createElement('div');
+        row.className = 'loc-row';
+        const span = document.createElement('span');
+        let text = adminName(a);
+        if (a.addedBy && map[a.addedBy]) text += ' ← ' + adminName(map[a.addedBy]);
+        span.textContent = text;
+        row.appendChild(span);
+        el.appendChild(row);
+      });
+    }
+
+    async function loadInvites() {
+      const data = await api('GET', '/api/invites');
+      const el = document.getElementById('invitesList');
+      if (!data.success || !data.invites.length) { el.textContent = 'Немає активних запрошень.'; return; }
+
+      el.innerHTML = '';
+      data.invites.forEach(inv => {
+        const row = document.createElement('div');
+        row.className = 'loc-row';
+        const hours = Math.max(0, Math.round((new Date(inv.expiresAt) - Date.now()) / 3600000));
+        const span = document.createElement('span');
+        span.textContent = (inv.createdByName || 'ID ' + inv.createdBy) + ' (' + (hours > 0 ? hours + 'г' : '<1г') + ')';
+        row.appendChild(span);
+        const btn = document.createElement('button');
+        btn.className = 'danger';
+        btn.textContent = 'Скасувати';
+        btn.addEventListener('click', async () => {
+          const res = await api('DELETE', '/api/invites/' + inv.token);
+          alert(res.message);
+          loadInvites();
+        });
+        row.appendChild(btn);
+        el.appendChild(row);
+      });
+    }
+
+    // Init happens after login (see loadAll above)
   </script>
 </body>
 </html>

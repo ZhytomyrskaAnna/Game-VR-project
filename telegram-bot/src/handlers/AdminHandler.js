@@ -2,6 +2,7 @@ class AdminHandler {
   constructor(adminStore, botUsername) {
     this.adminStore = adminStore;
     this.botUsername = botUsername;
+    this._pendingPasswords = new Set();
   }
 
   _displayName(admin) {
@@ -10,8 +11,11 @@ class AdminHandler {
     return `ID ${admin.chatId}`;
   }
 
-  async invite(bot, chatId) {
-    const token = await this.adminStore.createInvite(chatId);
+  async invite(bot, chatId, from) {
+    const token = await this.adminStore.createInvite(chatId, {
+      firstName: from.first_name,
+      username: from.username,
+    });
     const link = `https://t.me/${this.botUsername}?start=inv_${token}`;
     await bot.sendMessage(chatId,
       `Посилання для запрошення адміна:\n\n${link}\n\nДійсне 24 години. Одноразове.`
@@ -41,21 +45,26 @@ class AdminHandler {
 
   async list(bot, chatId) {
     const admins = await this.adminStore.listAdmins();
-    if (admins.length === 0) {
-      await bot.sendMessage(chatId, 'Список адмінів порожній.');
-      return;
-    }
+    const adminsMap = {};
+    admins.forEach(a => { adminsMap[a.chatId] = a; });
 
     let text = 'Адміни:\n';
     const buttons = [];
 
     for (const admin of admins) {
-      const isOwner = admin.chatId === this.adminStore.ownerChatId;
+      const isProtected = this.adminStore.isProtected(admin.chatId);
       const name = this._displayName(admin);
-      const label = isOwner ? `${name} (власник)` : name;
+      let label = isProtected ? `${name} (захищений)` : name;
+
+      if (!isProtected && admin.addedBy) {
+        const inviter = adminsMap[admin.addedBy];
+        const inviterName = inviter ? this._displayName(inviter) : `ID ${admin.addedBy}`;
+        label += ` ← ${inviterName}`;
+      }
+
       text += `- ${label}\n`;
 
-      if (!isOwner) {
+      if (!isProtected) {
         buttons.push([{
           text: `Видалити ${name}`,
           callback_data: `admin_remove_${admin.chatId}`,
@@ -70,12 +79,70 @@ class AdminHandler {
     await bot.sendMessage(chatId, text, opts);
   }
 
+  async listInvites(bot, chatId) {
+    const invites = await this.adminStore.listInvites();
+    if (invites.length === 0) {
+      await bot.sendMessage(chatId, 'Немає активних запрошень.');
+      return;
+    }
+
+    let text = 'Активні запрошення:\n';
+    const buttons = [];
+
+    for (const inv of invites) {
+      const timeLeft = Math.round((inv.expiresAt - Date.now()) / 3600000);
+      text += `- ${inv.createdByName} (${timeLeft > 0 ? timeLeft + 'г' : '<1г'})\n`;
+      buttons.push([{
+        text: `Скасувати (${inv.createdByName})`,
+        callback_data: `invite_cancel_${inv.token}`,
+      }]);
+    }
+
+    buttons.push([{ text: 'Назад', callback_data: 'menu' }]);
+    await bot.sendMessage(chatId, text, {
+      reply_markup: { inline_keyboard: buttons },
+    });
+  }
+
+  async cancelInvite(bot, chatId, token) {
+    const cancelled = await this.adminStore.cancelInvite(token);
+    await bot.sendMessage(chatId, cancelled ? 'Запрошення скасовано.' : 'Запрошення не знайдено.');
+  }
+
   async remove(bot, chatId, targetChatId) {
     try {
       await this.adminStore.removeAdmin(targetChatId);
-      await bot.sendMessage(chatId, `Адміна видалено.`);
+      await bot.sendMessage(chatId, 'Адміна видалено.');
     } catch (err) {
       await bot.sendMessage(chatId, err.message);
+    }
+  }
+
+  async promptChangePassword(bot, chatId) {
+    this._pendingPasswords.add(chatId);
+    await bot.sendMessage(chatId, 'Введіть новий пароль для API (мінімум 4 символи):');
+  }
+
+  hasPendingPassword(chatId) {
+    return this._pendingPasswords.has(chatId);
+  }
+
+  clearPendingPassword(chatId) {
+    this._pendingPasswords.delete(chatId);
+  }
+
+  async handlePasswordInput(bot, chatId, text, gameApi) {
+    this._pendingPasswords.delete(chatId);
+    if (text.length < 4) {
+      await bot.sendMessage(chatId, 'Пароль має бути мінімум 4 символи.');
+      return;
+    }
+    const data = await gameApi.changePassword(text);
+    if (data.success) {
+      gameApi.apiPassword = text;
+      await bot.sendMessage(chatId, 'Пароль API змінено.');
+    } else {
+      await bot.sendMessage(chatId, `Помилка: ${data.message}`);
     }
   }
 }

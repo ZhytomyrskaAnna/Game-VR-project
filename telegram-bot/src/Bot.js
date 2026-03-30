@@ -7,6 +7,7 @@ class Bot {
   constructor(telegramBot, { gameApi, adminStore, botUsername }) {
     this.bot = telegramBot;
     this.adminStore = adminStore;
+    this.gameApi = gameApi;
     this.prize = new PrizeHandler(gameApi);
     this.route = new RouteHandler(gameApi);
     this.admin = new AdminHandler(adminStore, botUsername);
@@ -15,8 +16,8 @@ class Bot {
     this._registerHandlers();
   }
 
-  _log(msg, action) {
-    const user = msg.from?.username ? `@${msg.from.username}` : msg.from?.first_name || msg.chat.id;
+  _log(from, action) {
+    const user = from?.username ? `@${from.username}` : from?.first_name || 'unknown';
     console.log(`[BOT] ${user} → ${action}`);
   }
 
@@ -31,7 +32,7 @@ class Bot {
 
     // Handle /start with invite token
     if (text.startsWith('/start inv_')) {
-      this._log(msg, 'invite link');
+      this._log(msg.from, 'invite link');
       const token = text.replace('/start inv_', '');
       const success = await this.admin.handleInviteLink(
         this.bot, chatId, token, msg.from
@@ -44,11 +45,11 @@ class Bot {
     if (text === '/start') {
       const isAdmin = await this.adminStore.isAdmin(chatId);
       if (!isAdmin) {
-        this._log(msg, '/start (no access)');
+        this._log(msg.from, '/start (no access)');
         await this.bot.sendMessage(chatId, 'У вас немає доступу. Попросіть адміна надіслати запрошення.');
         return;
       }
-      this._log(msg, '/start');
+      this._log(msg.from, '/start');
       // Update admin profile (name/username) on each /start
       await this.adminStore.addAdmin(chatId, chatId, {
         firstName: msg.from.first_name,
@@ -58,11 +59,15 @@ class Bot {
       return;
     }
 
-    // Handle pending text input (location edit/add)
+    // Handle pending text input
     if (text && !text.startsWith('/')) {
       const isAdmin = await this.adminStore.isAdmin(chatId);
       if (!isAdmin) return;
 
+      if (this.admin.hasPendingPassword(chatId)) {
+        await this.admin.handlePasswordInput(this.bot, chatId, text, this.gameApi);
+        return;
+      }
       if (this.location.hasPendingInput(chatId)) {
         await this.location.handleTextInput(this.bot, chatId, text);
         return;
@@ -82,10 +87,11 @@ class Bot {
     }
 
     await this.bot.answerCallbackQuery(query.id);
-    this._log(query.message, data);
+    this._log(query.from, data);
 
-    // Clear pending location input on any button press
+    // Clear pending inputs on any button press
     this.location.clearPending(chatId);
+    this.admin.clearPendingPassword(chatId);
 
     // Menu
     if (data === 'menu') {
@@ -132,8 +138,14 @@ class Bot {
     }
 
     // Admin
-    if (data === 'admin_invite') return this.admin.invite(this.bot, chatId);
+    if (data === 'admin_invite') return this.admin.invite(this.bot, chatId, query.from);
     if (data === 'admin_list') return this.admin.list(this.bot, chatId);
+    if (data === 'admin_invites') return this.admin.listInvites(this.bot, chatId);
+    if (data === 'admin_password') return this.admin.promptChangePassword(this.bot, chatId);
+    if (data.startsWith('invite_cancel_')) {
+      const token = data.replace('invite_cancel_', '');
+      return this.admin.cancelInvite(this.bot, chatId, token);
+    }
     if (data.startsWith('admin_remove_')) {
       const targetId = data.replace('admin_remove_', '');
       return this.admin.remove(this.bot, chatId, Number(targetId));
@@ -161,6 +173,10 @@ class Bot {
           [
             { text: 'Запросити адміна', callback_data: 'admin_invite' },
             { text: 'Список адмінів', callback_data: 'admin_list' },
+          ],
+          [
+            { text: 'Активні запрошення', callback_data: 'admin_invites' },
+            { text: 'Змінити пароль API', callback_data: 'admin_password' },
           ],
         ],
       },
