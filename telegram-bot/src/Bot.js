@@ -15,9 +15,14 @@ class Bot {
     this._registerHandlers();
   }
 
+  _log(msg, action) {
+    const user = msg.from?.username ? `@${msg.from.username}` : msg.from?.first_name || msg.chat.id;
+    console.log(`[BOT] ${user} → ${action}`);
+  }
+
   _registerHandlers() {
-    this.bot.on('message', (msg) => this._onMessage(msg).catch(err => console.error('Message handler error:', err.message)));
-    this.bot.on('callback_query', (query) => this._onCallback(query).catch(err => console.error('Callback handler error:', err.message)));
+    this.bot.on('message', (msg) => this._onMessage(msg).catch(err => console.error('[BOT] Message error:', err.message)));
+    this.bot.on('callback_query', (query) => this._onCallback(query).catch(err => console.error('[BOT] Callback error:', err.message)));
   }
 
   async _onMessage(msg) {
@@ -26,6 +31,7 @@ class Bot {
 
     // Handle /start with invite token
     if (text.startsWith('/start inv_')) {
+      this._log(msg, 'invite link');
       const token = text.replace('/start inv_', '');
       const success = await this.admin.handleInviteLink(
         this.bot, chatId, token, msg.from
@@ -38,9 +44,11 @@ class Bot {
     if (text === '/start') {
       const isAdmin = await this.adminStore.isAdmin(chatId);
       if (!isAdmin) {
+        this._log(msg, '/start (no access)');
         await this.bot.sendMessage(chatId, 'У вас немає доступу. Попросіть адміна надіслати запрошення.');
         return;
       }
+      this._log(msg, '/start');
       // Update admin profile (name/username) on each /start
       await this.adminStore.addAdmin(chatId, chatId, {
         firstName: msg.from.first_name,
@@ -74,6 +82,7 @@ class Bot {
     }
 
     await this.bot.answerCallbackQuery(query.id);
+    this._log(query.message, data);
 
     // Clear pending location input on any button press
     this.location.clearPending(chatId);

@@ -45,11 +45,14 @@ async function initBot(app, db) {
   return async function notifyAdmins(message) {
     try {
       const admins = await adminStore.listAdmins();
-      await Promise.allSettled(
+      console.log(`[BOT] Notifying ${admins.length} admins`);
+      const results = await Promise.allSettled(
         admins.map(a => telegramBot.sendMessage(a.chatId, message, { parse_mode: 'HTML' }))
       );
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length) console.error(`[BOT] ${failed.length} notifications failed`);
     } catch (err) {
-      console.error('Notify admins failed:', err.message);
+      console.error('[BOT] Notify admins failed:', err.message);
     }
   };
 }
