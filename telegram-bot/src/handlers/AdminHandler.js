@@ -90,10 +90,11 @@ class AdminHandler {
     const buttons = [];
 
     for (const inv of invites) {
+      const creator = inv.createdByName || `ID ${inv.createdBy}`;
       const timeLeft = Math.round((inv.expiresAt - Date.now()) / 3600000);
-      text += `- ${inv.createdByName} (${timeLeft > 0 ? timeLeft + 'г' : '<1г'})\n`;
+      text += `- ${creator} (${timeLeft > 0 ? timeLeft + 'г' : '<1г'})\n`;
       buttons.push([{
-        text: `Скасувати (${inv.createdByName})`,
+        text: `Скасувати (${creator})`,
         callback_data: `invite_cancel_${inv.token}`,
       }]);
     }
