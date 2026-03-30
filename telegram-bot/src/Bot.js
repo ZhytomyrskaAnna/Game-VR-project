@@ -16,8 +16,8 @@ class Bot {
   }
 
   _registerHandlers() {
-    this.bot.on('message', (msg) => this._onMessage(msg));
-    this.bot.on('callback_query', (query) => this._onCallback(query));
+    this.bot.on('message', (msg) => this._onMessage(msg).catch(err => console.error('Message handler error:', err.message)));
+    this.bot.on('callback_query', (query) => this._onCallback(query).catch(err => console.error('Callback handler error:', err.message)));
   }
 
   async _onMessage(msg) {

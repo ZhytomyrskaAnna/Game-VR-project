@@ -7,9 +7,9 @@
     "build": "echo 'No build step needed' && exit 0"
   },
   "dependencies": {
-    "cors": "^2.8.5",
+    "cors": "^2.8.6",
     "express": "^4.21.2",
-    "mongodb": "^6.12.0",
-    "node-telegram-bot-api": "^0.66.0"
+    "mongodb": "^7.1.1",
+    "node-telegram-bot-api": "^0.67.0"
   }
 }
