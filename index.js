@@ -235,11 +235,29 @@ function showWinScreen(message, markerNum) {
 
     document.body.appendChild(winDiv);
 }
+
+/*date and time css */
+function updateDateTime() {
+    const clockEl = document.getElementById("clock");
+    const dateEl = document.getElementById("date");
+
+    // Если элементов нет в HTML — просто выходим, не выдавая ошибку
+    if (!clockEl || !dateEl) return; 
+
+    const now = new Date();
+    clockEl.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    dateEl.textContent = now.toLocaleDateString();
+}
+
+
+/*date and time css */
+
 document.addEventListener('DOMContentLoaded', () => {
     statusDisplay = document.getElementById("status-display");
     if (statusDisplay) {
         statusDisplay.textContent = "Статус: Готово до пошуку!";
     }
+    fetchOpenHouseRoute();
     // Start the on-screen stopwatch (HH:MM:SS) each time the page is opened
     const hudTimerEl = document.querySelector('.hud-timer');
     if (hudTimerEl) {
@@ -265,27 +283,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const startTs = Date.now();
         updateStopwatch(startTs);
         globalThis._prizeHudTimerInterval = setInterval(() => updateStopwatch(startTs), 1000);
-        fetchOpenHouseRoute();
+    }
+    const clockEl = document.getElementById("clock");
+    const dateEl = document.getElementById("date");
+    if (clockEl && dateEl) {
+        setInterval(updateDateTime, 60000);
+        updateDateTime();
     }
 });
-/*date and time css */
-function updateDateTime() {
-    const now = new Date();
-
-    const time = now.toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-
-    const date = now.toLocaleDateString();
-
-    document.getElementById("clock").textContent = time;
-    document.getElementById("date").textContent = date;
-}
-
-setInterval(updateDateTime, 60000);
-updateDateTime();
-/*date and time css */
 
 
 function showInfoModal(text) {
