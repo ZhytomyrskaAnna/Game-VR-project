@@ -134,7 +134,7 @@ async function authMiddleware(req, res, next) {
   if (PUBLIC_PATHS.has(req.path)) return next();
   if (req.path.startsWith('/webhook/')) return next();
   if (req.path === '/api/locations' && req.method === 'GET') return next();
-  if (req.path === '../admin' && req.method === 'GET') return next();
+  if (req.path === '/admin' && req.method === 'GET') return next();
 
   const key = req.headers['x-api-key'];
   if (key === 'localhost' && LOCAL_IPS.has(req.ip)) return next();
@@ -158,12 +158,12 @@ app.use(authMiddleware);
 // --- МАРШРУТЫ ---
 
 // Password verification endpoint
-app.post('../admin/login', asyncHandler(async (req, res) => {
+app.post('/admin/login', asyncHandler(async (req, res) => {
   res.json({ success: true });
 }));
 
 // Change password endpoint (for bot)
-app.post('../admin/change-password', asyncHandler(async (req, res) => {
+app.post('/admin/change-password', asyncHandler(async (req, res) => {
   const { newPassword } = req.body;
   if (!newPassword || newPassword.length < 4) {
     return res.status(400).json({ success: false, message: 'Пароль має бути мінімум 4 символи.' });
@@ -172,8 +172,8 @@ app.post('../admin/change-password', asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Пароль змінено.' });
 }));
 
-app.get('../admin', (req, res) => {
-    res.sendFile(path.join(__dirname, '../admin.html'));
+app.get('/admin', (req, res) => {
+    res.sendFile(path.join(__dirname, 'admin.html'));
 });
 
 app.get('/admin/status', asyncHandler(async (req, res) => {
@@ -186,7 +186,7 @@ app.get('/admin/status', asyncHandler(async (req, res) => {
   });
 }));
 
-app.post('../admin/reset-prize', asyncHandler(async (req, res) => {
+app.post('/admin/reset-prize', asyncHandler(async (req, res) => {
   const marker = await generateNewPrizeMarker();
   res.json({ success: true, message: 'Новий приз згенеровано!', prizeMarker: marker });
 }));
