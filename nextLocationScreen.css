@@ -1,0 +1,100 @@
+.contrail-one-regular {
+    font-family: "Contrail One", sans-serif;
+    font-weight: 400;
+    font-style: normal;
+}
+
+body {
+    background-color: #ffffff;
+}
+
+#nextLocation-screen {
+    width: 100vw;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    color: white;
+    font-family: "Contrail One", sans-serif;
+    font-style: normal;
+    justify-content: flex-start;
+    align-items: center;
+    gap:10vh;
+
+}
+
+.icon {
+    width: 80%;
+}
+
+.info{
+    width: 100vw;
+    text-align: center;
+    display: flex;
+
+    flex-direction: column;
+    justify-content: flex-start;
+
+    gap: 2vh;    
+    align-items: center;
+}
+
+.info p {
+    margin: 0;
+}
+
+#nextLocation-screen .marker {
+    font-size: 10vw;
+    font-weight: bold;
+
+}
+.marker span{
+     background: linear-gradient(
+        to right,
+        #13bbdd 33%,
+        #fcd71f 66%,
+        #13bbdd 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 500% auto;
+    animation: textShine 2s ease-in-out infinite alternate;
+}
+@keyframes textShine {
+    0% {
+        background-position: 0% 50%;
+    }
+    100% {
+        background-position: 100% 50%;
+    }
+}
+.location{
+    font-size: 28px;
+    font-weight: 600;
+    color:#09437c;
+    
+}
+.logotitle img {
+  width: 18vw;
+}
+.logo{
+  width: 60vw !important;
+  height: auto !important;
+  padding: 0 !important;
+}
+.logotitle div {
+  width: 13vw;
+  display: flex !important;
+}
+.logo img{
+  width: fit-content;
+  padding: 0px;
+}
+
+.logotitle {
+  display: flex;
+  width: 100%;
+  justify-content: space-evenly;
+  align-items: flex-start;
+  margin: 2vh 0 0  0;
+}
