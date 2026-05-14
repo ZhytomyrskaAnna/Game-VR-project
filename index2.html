@@ -7,7 +7,8 @@
   <title>BUDDY SEARCH</title>
   <script src="https://aframe.io/releases/1.7.0/aframe.min.js"></script>
   <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-  <link rel="stylesheet" href="css/style2.css">
+  <script src="index.js?v=2"></script>
+  <link rel="stylesheet" href="style2.css">
 </head>
 
 <body>
@@ -20,7 +21,7 @@
     <div class="hud-top-right">
       <p class="bat-percent">84%</p>
 
-      <img class = "battery" src="assets/battery.svg" alt="battery">
+      <img class = "battery" src="assets/battery.svg">
     </div>
   </div>
   <div class="bottom-date">
@@ -28,7 +29,7 @@
   </div>
 
   <div class="hud-menu">
-    <img src = "assets/etilogo.svg" alt="logo">
+    <img src = "assets/etilogo.svg"/>
   </div>
 
   <div class="corner tl"></div>
@@ -37,7 +38,7 @@
   <div class="corner br"></div>
 
   <div >
-    <img id="center" src="assets/eye.svg" alt="center">
+    <img id="center" src="assets/eye.svg">
   </div>
 </div>
   <a-scene embedded vr-mode-ui="enabled: false;"
@@ -47,8 +48,8 @@
 
   </a-scene>
   
-  <script src="js/markerGenerator.js"></script>
-  <script src="js/index.js"></script>
+  <script src="markerGenerator.js"></script>
+  <script src="index.js"></script>
 </body>
 
 </html>

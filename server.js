@@ -341,7 +341,7 @@ async function start() {
   app.listen(port, async () => {
     console.log(`Server running on port ${port}`);
     try {
-      const initBot = require('../telegram-bot/src/index');
+      const initBot = require('./telegram-bot/src/index');
       const notify = await initBot(app, db);
       if (notify) notifyAdmins = notify;
     } catch (err) {
