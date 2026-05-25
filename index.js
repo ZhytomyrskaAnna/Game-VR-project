@@ -3,8 +3,6 @@ let statusDisplay = document.getElementById("status-display");
 
 // Логика сценария для дня открытых дверей и командной игры
 // let openHouseRoute = [12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30]; // Всего маркеров для открытого дня - 19 (12-30)
-let startOpenHouse = false; // Флаг, начали ли маршрут открытого дня
-// let openHouseRoute = [12, 28, 30, 13]; // Всего маркеров для открытого дня - 12 (12-23)
 let openHouseRoute = [];
 let openHouseSteps = 5; // Количество этапов для открытого дня
 const openHouseHints = {
@@ -27,25 +25,9 @@ const openHouseHints = {
     28: "Кафітерій",
     29: "Задній двір",
     30: "Холл"
-}; 
-/*const groupFirstGameRoute = [24, 25, 26, 27, 28, 29]; 
-const groupSecondGameRoute = [30, 31, 32, 33, 34, 35]; 
-const groupFirstGameHints = {
-    24: '',
-    25: '',
-    26: '',
-    27: '',
-    28: ''
 };
-const groupSecondGameHints = {
-    30: "Ви на старті! Наступна точка: Бібліотека.",
-    31: "Бібліотека пройдена. Шукайте маркер у Кафетерії.",
-    32: "Смачно! Тепер прямуйте до Головної Аудиторії.",
-    33: "Майже фініш! Знайдіть маркер біля Деканату.",
-    34: "Вітаємо! Ви пройшли весь маршрут Командної гри!"
-}; */
 
-// URL твоего сервера
+// URL сервера
 const SERVER_URL = 'https://game-vr-project.onrender.com';
 
 async function fetchOpenHouseRoute() {
@@ -55,6 +37,7 @@ async function fetchOpenHouseRoute() {
         if (data.success) {
             openHouseRoute = data.route;
             console.log('Отримано актуальний маршрут від сервера:', openHouseRoute);
+            updateHintUI();
         }
     } catch (error) {
         console.error('Помилка завантаження маршруту відкритого дня:', error);
@@ -74,39 +57,74 @@ AFRAME.registerComponent('look-at-camera', {
 let isScanning = false; // Флаг, идет ли процесс сканирования
 let isWinner = false;   // Флаг, выиграл ли уже игрок
 
-function handleOpenHouseMarker(markerValue) {
+function updateHintUI() {
+    let currentStep = Number.parseInt(localStorage.getItem('openHouseStep')) || 0;
+    const hintContainer = document.getElementById('hint-container');
+    const hintBox = document.getElementById('hint-box');
 
-    if(markerValue === openHouseRoute[0] && !startOpenHouse) {
-        showInfoModal(`Вітаємо! Ви почали маршрут відкритого дня! Ваш перший пункт в локації: ${openHouseHints[markerValue]+1}.`);
-        startOpenHouse = true;
-        localStorage.setItem('openHouseStep', 1);
+    // Если маршрут загружен, начат (currentStep > 0) и не завершен
+    if (openHouseRoute.length > 0 && currentStep > 0 && currentStep < openHouseRoute.length) {
+        hintContainer.style.display = 'flex';
+        let nextTargetMarker = openHouseRoute[currentStep];
+        hintBox.innerText = `Наступна ціль: ${openHouseHints[nextTargetMarker]}`;
+    } else {
+        // Если маршрут не начат или уже закончен, прячем кнопку
+        hintContainer.style.display = 'flex';
+        hintBox.style.display = 'none';
     }
+}
 
-    if(!startOpenHouse) {
-        showInfoModal(`Ви не почали маршрут відкритого дня.`);
+function handleOpenHouseMarker(markerValue) {
+    if (!openHouseRoute || openHouseRoute.length === 0) {
+        showInfoModal("Маршрут ще завантажується...");
         return;
     }
 
     let currentStep = Number.parseInt(localStorage.getItem('openHouseStep')) || 0;
+
+    // СТАРТ МАРШРУТА
+    if (markerValue === openHouseRoute[0]) {
+        if (currentStep === 0) {
+            showInfoModal(`Вітаємо! Ви почали маршрут відкритого дня!\nВаша перша ціль: ${openHouseHints[openHouseRoute[1]]}.`);
+            localStorage.setItem('openHouseStep', 1);
+            updateHintUI(); // Обновляем и показываем кнопку
+            return;
+        } else {
+            showInfoModal(`Ви вже почали маршрут! Ваша актуальна ціль: ${openHouseHints[openHouseRoute[currentStep]]}.`);
+            return;
+        }
+    }
+
+    // Защита, если пытаются отсканировать другие метки до старта
+    if (currentStep === 0) {
+        showInfoModal(`Ви не почали маршрут відкритого дня. Спочатку знайдіть маркер "Старт" (№${openHouseRoute[0]}).`);
+        return;
+    }
+
     let expectedMarker = openHouseRoute[currentStep];
-    
+
+    // ПРОХОЖДЕНИЕ МАРШРУТА
     if (markerValue === expectedMarker) {
         if (currentStep < openHouseRoute.length - 1) {
-            showInfoModal(`Ти знайшов маркер в локації ${openHouseHints[markerValue]}. 
-            Наступний маркер в локації: ${openHouseHints[openHouseRoute[currentStep + 1]]}.`);
-        } else {
-            showInfoModal(`Вітаємо! Ви пройшли всі етапи відкритого дня! Повертайтеся до організаторів.`);
-            currentStep++; // Устанавливаем значение, превышающее последний индекс, чтобы блокировать дальнейшие шаги
-            startOpenHouse = false;
-        }
-        if (currentStep < openHouseRoute.length - 1) {
+            let currentLoc = openHouseHints[markerValue];
+            let nextLoc = openHouseHints[openHouseRoute[currentStep + 1]];
+            showInfoModal(`Ти знайшов маркер в локації: ${currentLoc}. \nНаступна ціль: ${nextLoc}.`);
             localStorage.setItem('openHouseStep', currentStep + 1);
+            updateHintUI(); // Обновляем текст в подсказке
+        } else {
+            // ФИНИШ
+            showInfoModal(`Вітаємо! Ви пройшли всі етапи відкритого дня! Повертайтеся до організаторів.`);
+            localStorage.setItem('openHouseStep', currentStep + 1); // Блокируем дальнейшие шаги
+            updateHintUI(); // Спрячет кнопку, так как маршрут окончен
         }
-    } else if (openHouseRoute.indexOf(markerValue) < currentStep) {
-        let nextMarker = openHouseHints[openHouseRoute[currentStep]];
-        showInfoModal(`Ти тут вже був! Твоя наступна актуальна ціль: ${nextMarker}.`);
-    } else {
-        showInfoModal(`Ти занадто далеко. Повернись до локації ${openHouseHints[openHouseRoute[currentStep]]} і шукай там!`);
+    } 
+    else if (openHouseRoute.indexOf(markerValue) !== -1 && openHouseRoute.indexOf(markerValue) < currentStep) {
+        let targetLoc = openHouseHints[openHouseRoute[currentStep]];
+        showInfoModal(`Ти тут вже був! Твоя актуальна ціль: ${targetLoc}.`);
+    } 
+    else {
+        let targetLoc = openHouseHints[openHouseRoute[currentStep]];
+        showInfoModal(`Це не той маркер. Повернись і шукай в локації: ${targetLoc}!`);
     }
 }
 
@@ -142,18 +160,33 @@ AFRAME.registerComponent('prizeslots', {
 
         marker.addEventListener('markerFound', async function () {
             if (isScanning || isWinner) return;
-
-            isScanning = true;
-            const markerValue = Number.parseInt(marker.getAttribute("value"))
-
-            showOverlayMessage(`Перевірка маркера №${markerValue}...`, 'info');
             
-            if (openHouseRoute.includes(markerValue)) {
+            const markerValue = Number.parseInt(marker.getAttribute("value"));
+            isScanning = true;
+
+            // ГРУППА 1: Поиск приза (Маркеры 0 - 11)
+            if (markerValue >= 0 && markerValue <= 11) {
+                showOverlayMessage(`Перевірка маркера №${markerValue}...`, 'info');
+                await handleServerMarker(markerValue);
+            } 
+            
+            // ГРУППА 2: День открытых дверей (Маркеры 12 - 30)
+            else if (markerValue >= 12 && markerValue <= 30) {
                 handleOpenHouseMarker(markerValue);
-                return;
+                // Важно: снимаем блокировку сканера, так как к серверу не обращаемся
+                setTimeout(() => { isScanning = false; }, 1500); 
+            } 
+            
+            // ГРУППА 3: Командная игра (Маркеры 31 - 42)
+            else if (markerValue >= 31 && markerValue <= 42) {
+                showInfoModal("Цей маркер належить до командної гри! (В розробці)");
             }
             
-            await handleServerMarker(markerValue);
+            // НЕИЗВЕСТНЫЙ МАРКЕР
+            else {
+                showOverlayMessage("Невідомий маркер", "error");
+                setTimeout(() => { isScanning = false; }, 1500);
+            }
         });
     }
 });
@@ -289,6 +322,20 @@ document.addEventListener('DOMContentLoaded', () => {
     if (clockEl && dateEl) {
         setInterval(updateDateTime, 60000);
         updateDateTime();
+    }
+    const hintBtn = document.getElementById('hint-toggle-btn');
+    const hintBox = document.getElementById('hint-box');
+    
+    if (hintBtn && hintBox) {
+        hintBtn.addEventListener('click', () => {
+            if (hintBox.style.display === 'none') {
+                hintBox.style.display = 'block';
+                hintBtn.innerText = 'Сховати підказку';
+            } else {
+                hintBox.style.display = 'none';
+                hintBtn.innerText = 'Підказка';
+            }
+        });
     }
 });
 
