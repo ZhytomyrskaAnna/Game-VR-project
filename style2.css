@@ -14,7 +14,8 @@ body {
   z-index: 999;
   color: white;
   font-weight: 600;
-  background-color: rgb(43, 43, 43);
+  /* Разкомитить, когда нужно будет потестить функционал локально */
+  /* background-color: rgb(43, 43, 43); */
 }
 
 .hud-rec {
